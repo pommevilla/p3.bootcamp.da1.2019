@@ -4,7 +4,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 ```
 
 
@@ -16,17 +16,9 @@ The workshop is broken up into 4 parts:
 * [ggplot2 basics](https://pommevilla.github.io/p3.bootcamp.r.2019/lesson_2.html)
 * [Next steps](https://pommevilla.github.io/p3.bootcamp.r.2019/next_steps.html)
 
-You'll need to install the following packages to do this workshop: ggplot2, tidyverse, Rmarkdown, and reshape2. 
+You'll need to install the following packages to do this workshop: `ggplot2`, `tidyverse`, `Rmarkdown`, and `reshape2`. 
 
-Copy and paste the following lines of code into your R console to download them all at once.
 
-```{r}
-reqs <- c("tidyverse", "rmarkdown", "nycflights13")
-missing_packages <- reqs[!(reqs %in% installed.packages()[, "Package"])]
-if(length(new.packages)) {
-  install.packages(missing_packages)
-}
-```
 
 ## Why R?
 
