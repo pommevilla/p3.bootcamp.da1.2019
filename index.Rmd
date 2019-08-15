@@ -1,8 +1,8 @@
 ---
-title: "Predictive Plant Phenomics Programming Bootcamp 2019: Introduction to R"
+title: "Predictive Plant Phenomics Programming Bootcamp 2019: Applications 1"
 ---
 
-Materials for the Programming Bootcamp hosted by the [Predictive Plant Phenomics (P3) NRT program][p3-landing] on August 13-16, 2019.  These workshops are intended as a gentle introduction for those who have little to no experience in R, Python, and UNIX.  There are four parts to this workshop:
+Materials for the programming bootcamp hosted by the [Predictive Plant Phenomics (P3) NRT program][p3-landing] on August 16, 2019. This workshop is a demonstration of 
 
 * [August 13: *Introduction to R*][intro-to-r] taught by [Paul Villanueva][paul-github]
 * [August 14: *Introduction to Python*][intro-to-python] taught by [Paul Villanueva][paul-github]
