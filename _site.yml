@@ -7,7 +7,7 @@ navbar:
     href: index.html
   - text: Introduction
     href: introduction.html
-  - text: R Basics
+  - text: Shell scripting, visualizations
     href: lesson_1.html
   - text: Basic visualizations
     href: lesson_2.html

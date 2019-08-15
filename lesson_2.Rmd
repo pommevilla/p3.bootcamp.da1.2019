@@ -1,0 +1,185 @@
+---
+title: "Lesson 2: Basic visualizations"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+```
+
+## What is ggplot?
+
+Hadley Wickham, chief scientist at RStudio (and ISU alum!), said in [A Layered Grammar of Graphics](https://vita.had.co.nz/papers/layered-grammar.pdf):
+
+> A grammar of graphics is a tool that enables us to concisely describe the components of a graphic. 
+
+The `ggplot2` package is built around the idea of "building up a graphic from multiple layers of data." In other words, we're building up our plot from individual pieces, one function call at a time.
+
+The function call for ggplot is:
+
+```{r, eval = FALSE}
+ggplot(data, mapping = aes(...)) + 
+  <geom_layers> + 
+  <additional layers>
+```
+
+Here, each of the different objects represents a layer:
+
+*`data` is the data object that you would like to visualize and `mapping` contains the aesthetic mappings to use; that is, the mapping of which aesthetics to which variables. 
+*`geom_layers` are what actually draw the points onto the canvas; for example, `geom_point` will create a scatter plot. 
+* There are additional layers you can use to make your graph prettier.
+
+A `ggplot` call might look like:
+
+```{r}
+mtcars %>% 
+  ggplot(aes(x = wt, y = mpg)) + 
+  geom_point()
+```
+
+Let's change the x- and y-axis titles to be a little more informative:
+
+```{r}
+mtcars %>% 
+  ggplot(aes(x = wt, y = mpg)) + 
+  geom_point() +
+  labs(x = "Weight (in thousands of lbs)",
+       y = "Miles per gallon")
+```
+
+We can also introduce other aesthetics into the plot. For example, let's color the dots by the number of cylinders they have:
+
+```{r}
+mtcars %>% 
+  ggplot(aes(x = wt, y = mpg)) + 
+  geom_point(aes(color = cyl)) +
+  labs(x = "Weight (in thousands of lbs)",
+       y = "Miles per gallon")
+```
+
+We can also change the size of the points by setting `size` to a specific number:
+
+```{r}
+mtcars %>% 
+  ggplot(aes(x = wt, y = mpg)) + 
+  geom_point(aes(color = cyl), 
+             size = 3) +
+  labs(x = "Weight (in thousands of lbs)",
+       y = "Miles per gallon")
+```
+
+And let's change a few more things to make the graph a bit prettier:
+
+```{r}
+mtcars %>% 
+  ggplot(aes(x = wt, y = mpg)) + 
+  geom_point(aes(color = cyl)) +
+  labs(x = "Weight",
+       y = "Miles per gallon",
+       title = "Miles per gallon versus weight for automobiles",
+       subtitle = "Data from Motor Trend magazine") + 
+  theme_light()
+```
+
+
+### Exercises 2.1
+
+* We colored the points according to the number of cylinders it has, but there's something wrong with it. What is it? How can we fix it?
+* What are some things we can do to improve this graph? 
+* What are conclusions you can draw from this graph? 
+* Experiment with the color aesthetic by mapping it to different variables. Try mapping another variable to the `size` aesthetic (`qsec`, for instance).
+* Use `?theme_light` and try out a few other themes.
+
+## More practice
+
+For the rest of the day, we're going to work more with the `flights` dataset. Let's begin by getting a histogram of the flights using `geom_bar`:
+
+```{r}
+flights %>% 
+  ggplot(aes(x = carrier)) + 
+  geom_bar()
+```
+
+We can look up the airline codes by using `airlines`. Doing so, we see that United Airlines, JetBlue, and ExpressJet Airlines have the most flights out of New York in 2013.
+
+```{r}
+airlines %>% 
+  filter(carrier %in% c("UA", "EV", "B6"))
+```
+
+Let's fill in the bars with the name of the origin airport:
+
+```{r}
+flights %>% 
+  ggplot(aes(x = carrier, fill = origin)) + 
+  geom_bar()
+```
+
+Let's polish the graph a little:
+
+
+```{r}
+flights %>% 
+  ggplot(aes(x = carrier, fill = origin)) + 
+  geom_bar() + 
+  labs(x = "Carrier",
+       y = "",
+       title = "Number of flights from New York airports by carrier",
+       fill = "Origin")
+```
+
+Next, let's try and use the full carrier name. We have access to the carrier name from the `airlines` list. We will use `inner_join` to add the information from `airlines` to the `flights` data:
+
+```{r}
+flights %>% 
+  inner_join(airlines, by = "carrier")
+```
+
+Now we have an additional column at the end for the full name of the carrier. Let's revisit our earlier graph with this new information:
+
+```{r}
+flights %>% 
+  inner_join(airlines, by = "carrier") %>% 
+  ggplot(aes(x = name, fill = origin)) + 
+  geom_bar() + 
+  labs(x = "Carrier",
+       y = "",
+       title = "Number of flights from New York airports by carrier",
+       fill = "Origin") 
+```
+
+### Exercise 2.2
+
+* The text at the bottom is super cluttered now. Look up `?theme` and look at `axis.text.x` to learn how to rotate the text. Feel free to search online, also.
+* The `airports` data contains full airport names for several airports. Repeat the `inner_join` process above to combine this information into the data frame above. Look at the resulting data frame. What do you see different here? How can you use what you've learned today to fix this? Hint: One solution is to use `mutate`.
+* There's a lot of information on the chart, and stacking the bar plots might not be the most informative way to present it. Look up `facet_wrap` and use it to separate the chart into there separate bar plots. Alternatively, read the Details section of the documentation for `geom_bar` for another way to address this problem.
+* Reproduce the following graph (borrowed heavily from [Alexandra Chouldechova](https://www.andrew.cmu.edu/user/achoulde/94842/lectures/lecture12/lecture12-94842.html)). How can it be improved?
+
+```{r echo = FALSE}
+flights %>% 
+  inner_join(airlines, by = "carrier") %>% 
+  inner_join(airports, by = c("origin" = "faa")) %>% 
+  mutate(carrier_name = name.x,
+         origin_name = name.y) %>% 
+  group_by(dest, origin_name) %>%
+  summarise(av_dep_delay = mean(dep_delay, na.rm = TRUE),
+            count = n()) %>%
+  ungroup() %>%
+  filter(count > 50) %>%
+  mutate(dest = reorder(dest, av_dep_delay)) %>%
+  ggplot(aes(x = dest, y = av_dep_delay, 
+             size = count, color = count)) + 
+  geom_point(alpha = 0.5) +
+  scale_size_area() +
+  labs(x = "",
+       y = "",
+       title = "Average departure delay to destination airport",
+       subtitle = "In minutes; size of point scales with frequency") + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        legend.position = "none") + 
+  facet_wrap(~ origin_name, ncol = 1) 
+  
+```
+
+
+* Next section: [Next steps](https://pommevilla.github.io/p3.bootcamp.r.2019/next_steps.html)
