@@ -1,0 +1,52 @@
+---
+title: "Introduction"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## About this workshop
+
+The workshop is broken up into 4 parts:
+
+* [R Basics](https://pommevilla.github.io/p3.bootcamp.r.2019/lesson_1.html)
+* [ggplot2 basics](https://pommevilla.github.io/p3.bootcamp.r.2019/lesson_2.html)
+* [Next steps](https://pommevilla.github.io/p3.bootcamp.r.2019/next_steps.html)
+
+You'll need to install the following packages to do this workshop: ggplot2, tidyverse, Rmarkdown, and reshape2. 
+
+Copy and paste the following lines of code into your R console to download them all at once.
+
+```{r}
+reqs <- c("tidyverse", "rmarkdown", "nycflights13")
+missing_packages <- reqs[!(reqs %in% installed.packages()[, "Package"])]
+if(length(new.packages)) {
+  install.packages(missing_packages)
+}
+```
+
+## Why R?
+
+There are several programming languages out there, and they're all ultimately capable of doing whatever your goal is. That being said, here are some reasons why you might choose to learn R:
+
+* R seems to be the language of choice for statistical modeling and analysis.
+* Creating pretty graphs is relatively straightforward with `ggplot2`
+* RStudio is an excellent IDE and is constantly being updated and bug-fixed.
+* The biggest draw for me is the community support. R actively fosters a community of supportive people that you can turn to for help. 
+* Another benefit of this large community is that there are tons of packages for you to use. If you need to perform a specific task, there is likely an R package that can do it for you.
+
+Let's get started!
+
+Next section: [R basics](https://pommevilla.github.io/p3.bootcamp.r.2019/lesson_1.html)
+
+
+[p3-landing]: https://www.predictivephenomicsinplants.iastate.edu/
+[intro-to-r]: https://github.com/pommevilla/p3.bootcamp.r.2019
+[intro-to-python]: https://github.com/pommevilla/p3.bootcamp.python.2019
+[paul-github]: https://github.com/pommevilla
+[intro-to-unix]: https://github.com/skDooley/shell_tutorial
+[shane-github]: https://github.com/skDooley
+[data-1]: https://github.com/pommevilla/p3.bootcamp.da1.2019
