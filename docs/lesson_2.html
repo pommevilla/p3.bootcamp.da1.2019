@@ -377,9 +377,331 @@ div.tocify {
 </div>
 
 
-<div id="determine-which-clusters-to-include" class="section level2">
-<h2>Determine which clusters to include</h2>
-<p>According to the first-order difference criterion, the optimal clustering similarity was</p>
+<p>According to the first-order difference criterion, the optimal clustering similarity was 98%. However, for various reasons (mostly due to physical limitations), we ended up choosing a 95% similarity threshold.</p>
+<p>After determining this, we then used the representative sequences found in <code>0.95.fa</code> and queried them against our metagenomes. Thus, for each metagenome, we had an output file containing all the relevant hits. We then used a Python script to summarize the abundance and presence of each these representative sequences across our metagenomes. This information can be found in <code>data/abundance_presence.tsv</code>.</p>
+<p>Our job now is to determine which of these clusters to include. While it would be nice to design primers for all of the sequences and</p>
+<p>Our goal is to reproduce the following graph:</p>
+<div class="figure">
+<img src="data/plot.fo_difference.2-1.png" alt="Plot of first order differences by gene cluster inclusion" />
+<p class="caption">Plot of first order differences by gene cluster inclusion</p>
+</div>
+<p>We’ll begin by learning about visualizations. I have <a href="https://pommevilla.github.io/p3.bootcamp.r.2019/lesson_2.html">an introduction to ggplot2 here</a>, but we will begin with quick review before we start tackling this one.</p>
+<div id="basic-visualizations" class="section level2">
+<h2>Basic visualizations</h2>
+<p>We’ll begin by loading in our required packages.</p>
+<pre class="r"><code>library(ggplot2)
+library(tidyverse)</code></pre>
+<p>Before we tackle our goal, let’s warm up on <code>mtcars</code>.</p>
+<div id="exercise-2.1" class="section level3">
+<h3>Exercise 2.1</h3>
+<ul>
+<li>Reproduce the below graph. How can it be improved?:</li>
+</ul>
+<p><img src="lesson_2_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+</div>
+</div>
+<div id="importing-and-transforming-data" class="section level2">
+<h2>Importing and transforming data</h2>
+<p>Let’s load in the <code>tft_stats.tsv</code> data set.</p>
+<pre class="r"><code>tft_stats &lt;- read.delim(&quot;data/practice_data/tft_stats.tsv&quot;)
+tft_stats</code></pre>
+<pre><code>##             rank percent
+## 1        Iron IV    0.00
+## 2       Iron III    0.08
+## 3        Iron II    6.61
+## 4         Iron I   14.59
+## 5      Bronze IV   17.37
+## 6     Bronze III   14.47
+## 7      Bronze II   10.56
+## 8       Bronze I    7.74
+## 9      Silver IV    6.72
+## 10    Silver III    5.02
+## 11     Silver II    4.02
+## 12      Silver I    2.91
+## 13       Gold IV    3.15
+## 14      Gold III    2.18
+## 15       Gold II    1.58
+## 16        Gold I    0.96
+## 17   Platinum IV    1.07
+## 18  Platinum III    0.44
+## 19   Platinum II    0.23
+## 20    Platinum I    0.11
+## 21    Diamond IV    0.12
+## 22   Diamond III    0.04
+## 23    Diamond II    0.02
+## 24     Diamond I    0.01
+## 25      Master -    0.00
+## 26 GrandMaster -    0.00
+## 27  Challenger -    0.00</code></pre>
+<p>We can quickly visualize this by throwing it into <code>ggplot</code>:</p>
+<pre class="r"><code>tft_stats %&gt;% 
+  ggplot(aes(rank, percent)) + 
+  geom_col() + 
+  theme(axis.text.x = element_text(angle = 90))</code></pre>
+<p><img src="lesson_2_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>Note that <code>ggplot</code> will automatically reorder your data if it doesn’t think it’s sorted. We can get around this by telling <code>ggplot</code> that the data already is in the correct order (adapted from <a href="https://stackoverflow.com/a/38132711">this Stack Overflow post</a>):</p>
+<pre class="r"><code>tft_stats$rank &lt;- factor(tft_stats$rank, levels = tft_stats$rank)</code></pre>
+<p>Now, when we plot the data frame, the order will remain:</p>
+<pre class="r"><code>tft_stats %&gt;% 
+  ggplot(aes(rank, percent)) + 
+  geom_col() +
+  theme(axis.text.x = element_text(angle = 90)) </code></pre>
+<p><img src="lesson_2_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p>Let’s go ahead and fix this up:</p>
+<pre class="r"><code>tft_stats %&gt;% 
+  ggplot(aes(rank, percent)) + 
+  theme_light() +
+  geom_col() +
+  labs(x = &quot;Rank&quot;,
+       y = &quot;Percent of player base&quot;,
+       title = &quot;Distribution of players across ranks in Team Fight Tactics&quot;,
+       subtitle = &quot;through August 2019; source: lolchess.gg&quot;) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) </code></pre>
+<p><img src="lesson_2_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p>We’re going to use the <code>mutate</code> function. <code>mutate</code> lets us add columns to a data frame based on other columns. For instance, we can add a column to <code>mtcars</code> to store the ratio between <code>hp</code> and <code>wt</code>:</p>
+<pre class="r"><code>mtcars %&gt;% 
+  mutate(hp_to_wt = hp / wt)</code></pre>
+<pre><code>##     mpg cyl  disp  hp drat    wt  qsec vs am gear carb hp_to_wt
+## 1  21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4 41.98473
+## 2  21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4 38.26087
+## 3  22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1 40.08621
+## 4  21.4   6 258.0 110 3.08 3.215 19.44  1  0    3    1 34.21462
+## 5  18.7   8 360.0 175 3.15 3.440 17.02  0  0    3    2 50.87209
+## 6  18.1   6 225.0 105 2.76 3.460 20.22  1  0    3    1 30.34682
+## 7  14.3   8 360.0 245 3.21 3.570 15.84  0  0    3    4 68.62745
+## 8  24.4   4 146.7  62 3.69 3.190 20.00  1  0    4    2 19.43574
+## 9  22.8   4 140.8  95 3.92 3.150 22.90  1  0    4    2 30.15873
+## 10 19.2   6 167.6 123 3.92 3.440 18.30  1  0    4    4 35.75581
+## 11 17.8   6 167.6 123 3.92 3.440 18.90  1  0    4    4 35.75581
+## 12 16.4   8 275.8 180 3.07 4.070 17.40  0  0    3    3 44.22604
+## 13 17.3   8 275.8 180 3.07 3.730 17.60  0  0    3    3 48.25737
+## 14 15.2   8 275.8 180 3.07 3.780 18.00  0  0    3    3 47.61905
+## 15 10.4   8 472.0 205 2.93 5.250 17.98  0  0    3    4 39.04762
+## 16 10.4   8 460.0 215 3.00 5.424 17.82  0  0    3    4 39.63864
+## 17 14.7   8 440.0 230 3.23 5.345 17.42  0  0    3    4 43.03087
+## 18 32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1 30.00000
+## 19 30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2 32.19814
+## 20 33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1 35.42234
+## 21 21.5   4 120.1  97 3.70 2.465 20.01  1  0    3    1 39.35091
+## 22 15.5   8 318.0 150 2.76 3.520 16.87  0  0    3    2 42.61364
+## 23 15.2   8 304.0 150 3.15 3.435 17.30  0  0    3    2 43.66812
+## 24 13.3   8 350.0 245 3.73 3.840 15.41  0  0    3    4 63.80208
+## 25 19.2   8 400.0 175 3.08 3.845 17.05  0  0    3    2 45.51365
+## 26 27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1 34.10853
+## 27 26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2 42.52336
+## 28 30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2 74.68605
+## 29 15.8   8 351.0 264 4.22 3.170 14.50  0  1    5    4 83.28076
+## 30 19.7   6 145.0 175 3.62 2.770 15.50  0  1    5    6 63.17690
+## 31 15.0   8 301.0 335 3.54 3.570 14.60  0  1    5    8 93.83754
+## 32 21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2 39.20863</code></pre>
+<p>And we can go ahead and plot this new variable right away:</p>
+<pre class="r"><code>mtcars %&gt;% 
+  mutate(hp_to_wt = hp / wt) %&gt;% 
+  ggplot(aes(x = hp / wt, y = qsec)) +
+  geom_point() + 
+  labs(x = &quot;Horsepower-to-weight ratio (hp / lb)&quot;,
+       y = &quot;Quarter-mile time (seconds)&quot;,
+       title = &quot;Horsepower-to-weight ratio vs. quarter-mile time&quot;) + 
+  theme_light()</code></pre>
+<p><img src="lesson_2_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p>Just like with <code>summarise</code>, we can create multiple new variables at the same time with <code>mutate</code>:</p>
+<pre class="r"><code>mtcars %&gt;% 
+  mutate(hp_to_wt = hp / wt,
+         proj_hsec = 2 * qsec)</code></pre>
+<pre><code>##     mpg cyl  disp  hp drat    wt  qsec vs am gear carb hp_to_wt proj_hsec
+## 1  21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4 41.98473     32.92
+## 2  21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4 38.26087     34.04
+## 3  22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1 40.08621     37.22
+## 4  21.4   6 258.0 110 3.08 3.215 19.44  1  0    3    1 34.21462     38.88
+## 5  18.7   8 360.0 175 3.15 3.440 17.02  0  0    3    2 50.87209     34.04
+## 6  18.1   6 225.0 105 2.76 3.460 20.22  1  0    3    1 30.34682     40.44
+## 7  14.3   8 360.0 245 3.21 3.570 15.84  0  0    3    4 68.62745     31.68
+## 8  24.4   4 146.7  62 3.69 3.190 20.00  1  0    4    2 19.43574     40.00
+## 9  22.8   4 140.8  95 3.92 3.150 22.90  1  0    4    2 30.15873     45.80
+## 10 19.2   6 167.6 123 3.92 3.440 18.30  1  0    4    4 35.75581     36.60
+## 11 17.8   6 167.6 123 3.92 3.440 18.90  1  0    4    4 35.75581     37.80
+## 12 16.4   8 275.8 180 3.07 4.070 17.40  0  0    3    3 44.22604     34.80
+## 13 17.3   8 275.8 180 3.07 3.730 17.60  0  0    3    3 48.25737     35.20
+## 14 15.2   8 275.8 180 3.07 3.780 18.00  0  0    3    3 47.61905     36.00
+## 15 10.4   8 472.0 205 2.93 5.250 17.98  0  0    3    4 39.04762     35.96
+## 16 10.4   8 460.0 215 3.00 5.424 17.82  0  0    3    4 39.63864     35.64
+## 17 14.7   8 440.0 230 3.23 5.345 17.42  0  0    3    4 43.03087     34.84
+## 18 32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1 30.00000     38.94
+## 19 30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2 32.19814     37.04
+## 20 33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1 35.42234     39.80
+## 21 21.5   4 120.1  97 3.70 2.465 20.01  1  0    3    1 39.35091     40.02
+## 22 15.5   8 318.0 150 2.76 3.520 16.87  0  0    3    2 42.61364     33.74
+## 23 15.2   8 304.0 150 3.15 3.435 17.30  0  0    3    2 43.66812     34.60
+## 24 13.3   8 350.0 245 3.73 3.840 15.41  0  0    3    4 63.80208     30.82
+## 25 19.2   8 400.0 175 3.08 3.845 17.05  0  0    3    2 45.51365     34.10
+## 26 27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1 34.10853     37.80
+## 27 26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2 42.52336     33.40
+## 28 30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2 74.68605     33.80
+## 29 15.8   8 351.0 264 4.22 3.170 14.50  0  1    5    4 83.28076     29.00
+## 30 19.7   6 145.0 175 3.62 2.770 15.50  0  1    5    6 63.17690     31.00
+## 31 15.0   8 301.0 335 3.54 3.570 14.60  0  1    5    8 93.83754     29.20
+## 32 21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2 39.20863     37.20</code></pre>
+<p>Let’s go ahead and use <code>mutate</code> to add a cumulative percentage column to <code>tft_stats</code>. This is done with the <code>cumsum</code> function:</p>
+<pre class="r"><code>tft_stats %&gt;% 
+  mutate(cumulative_percent = cumsum(percent)) </code></pre>
+<pre><code>##             rank percent cumulative_percent
+## 1        Iron IV    0.00               0.00
+## 2       Iron III    0.08               0.08
+## 3        Iron II    6.61               6.69
+## 4         Iron I   14.59              21.28
+## 5      Bronze IV   17.37              38.65
+## 6     Bronze III   14.47              53.12
+## 7      Bronze II   10.56              63.68
+## 8       Bronze I    7.74              71.42
+## 9      Silver IV    6.72              78.14
+## 10    Silver III    5.02              83.16
+## 11     Silver II    4.02              87.18
+## 12      Silver I    2.91              90.09
+## 13       Gold IV    3.15              93.24
+## 14      Gold III    2.18              95.42
+## 15       Gold II    1.58              97.00
+## 16        Gold I    0.96              97.96
+## 17   Platinum IV    1.07              99.03
+## 18  Platinum III    0.44              99.47
+## 19   Platinum II    0.23              99.70
+## 20    Platinum I    0.11              99.81
+## 21    Diamond IV    0.12              99.93
+## 22   Diamond III    0.04              99.97
+## 23    Diamond II    0.02              99.99
+## 24     Diamond I    0.01             100.00
+## 25      Master -    0.00             100.00
+## 26 GrandMaster -    0.00             100.00
+## 27  Challenger -    0.00             100.00</code></pre>
+<p>And we can now add this line to our graph as another layer:</p>
+<pre class="r"><code>tft_stats %&gt;% 
+  mutate(cumulative = cumsum(percent)) %&gt;% 
+  ggplot(aes(x = rank, group = 1)) + 
+  theme_light() + 
+  geom_col(aes(y = percent)) +
+  geom_line(aes(y = cumulative), color = &quot;red&quot;)</code></pre>
+<p><img src="lesson_2_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<div id="exercise-2.2" class="section level3">
+<h3>Exercise 2.2</h3>
+<p>There are several things wrong with the <code>tft_stats</code> graph.</p>
+<ul>
+<li>What’s wrong with the y-axis? Use <code>mutate</code> to correct this.</li>
+<li>What’s wrong with the cumulative percentage line? How can we fix this? What do you think about the clarity of this graph?</li>
+<li>After fixing the line, pretty up the rest of the graph. Make the cumulative percentage line dashed.</li>
+</ul>
+<p>Read in <code>abundance_presence.tsv</code> with:</p>
+<pre class="r"><code>presence_abundance &lt;- read.delim(&quot;data/abundance_presence.tsv&quot;)</code></pre>
+<p>Recreate the graph below:</p>
+<p><img src="lesson_2_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<p>Some hints:</p>
+<ul>
+<li>We normalized the cumulative percentage curve in the <code>tft_stats</code> graph with the following formula:</li>
+</ul>
+<pre class="r"><code>tft_stats %&gt;% 
+  mutate(percent = percent / 100,
+         cumulative = cumsum(percent) * max(percent)) </code></pre>
+<pre><code>##             rank percent cumulative
+## 1        Iron IV  0.0000 0.00000000
+## 2       Iron III  0.0008 0.00013896
+## 3        Iron II  0.0661 0.01162053
+## 4         Iron I  0.1459 0.03696336
+## 5      Bronze IV  0.1737 0.06713505
+## 6     Bronze III  0.1447 0.09226944
+## 7      Bronze II  0.1056 0.11061216
+## 8       Bronze I  0.0774 0.12405654
+## 9      Silver IV  0.0672 0.13572918
+## 10    Silver III  0.0502 0.14444892
+## 11     Silver II  0.0402 0.15143166
+## 12      Silver I  0.0291 0.15648633
+## 13       Gold IV  0.0315 0.16195788
+## 14      Gold III  0.0218 0.16574454
+## 15       Gold II  0.0158 0.16848900
+## 16        Gold I  0.0096 0.17015652
+## 17   Platinum IV  0.0107 0.17201511
+## 18  Platinum III  0.0044 0.17277939
+## 19   Platinum II  0.0023 0.17317890
+## 20    Platinum I  0.0011 0.17336997
+## 21    Diamond IV  0.0012 0.17357841
+## 22   Diamond III  0.0004 0.17364789
+## 23    Diamond II  0.0002 0.17368263
+## 24     Diamond I  0.0001 0.17370000
+## 25      Master -  0.0000 0.17370000
+## 26 GrandMaster -  0.0000 0.17370000
+## 27  Challenger -  0.0000 0.17370000</code></pre>
+<p>However, if you try to do the same thing with the <code>presence_abundance</code> data frame, you won’t get the desired result. This is because the formula above is actually shorthand for:</p>
+<pre class="r"><code>tft_stats %&gt;% 
+  mutate(percent = percent / 100,
+         cumulative = cumsum(percent) / 1 * max(percent)) </code></pre>
+<pre><code>##             rank percent cumulative
+## 1        Iron IV  0.0000 0.00000000
+## 2       Iron III  0.0008 0.00013896
+## 3        Iron II  0.0661 0.01162053
+## 4         Iron I  0.1459 0.03696336
+## 5      Bronze IV  0.1737 0.06713505
+## 6     Bronze III  0.1447 0.09226944
+## 7      Bronze II  0.1056 0.11061216
+## 8       Bronze I  0.0774 0.12405654
+## 9      Silver IV  0.0672 0.13572918
+## 10    Silver III  0.0502 0.14444892
+## 11     Silver II  0.0402 0.15143166
+## 12      Silver I  0.0291 0.15648633
+## 13       Gold IV  0.0315 0.16195788
+## 14      Gold III  0.0218 0.16574454
+## 15       Gold II  0.0158 0.16848900
+## 16        Gold I  0.0096 0.17015652
+## 17   Platinum IV  0.0107 0.17201511
+## 18  Platinum III  0.0044 0.17277939
+## 19   Platinum II  0.0023 0.17317890
+## 20    Platinum I  0.0011 0.17336997
+## 21    Diamond IV  0.0012 0.17357841
+## 22   Diamond III  0.0004 0.17364789
+## 23    Diamond II  0.0002 0.17368263
+## 24     Diamond I  0.0001 0.17370000
+## 25      Master -  0.0000 0.17370000
+## 26 GrandMaster -  0.0000 0.17370000
+## 27  Challenger -  0.0000 0.17370000</code></pre>
+<p>What does the 1 represent? How can we apply that to <code>presence_abundance</code>?</p>
+</div>
+</div>
+<div id="choosing-an-inclusion-threshold" class="section level2">
+<h2>Choosing an inclusion threshold</h2>
+<p>We have most of what we need to make the desired visualization. All we need now is to replace the black line with the first-order differences, plot that, and put a vertical line to show the inclusion threshold. Just like when we calculated the first-order difference on the command line, the actual code is beyond the scope of this class. Run the following lines to add the first-order difference information to the <code>presence_abundance</code> data frame:</p>
+<pre class="r"><code>presence_abundance &lt;- presence_abundance %&gt;% 
+  mutate(cumulative_percent = cumsum(abundance) / sum(abundance) * max(abundance))
+fo_difference &lt;- function(pos){
+  left &lt;- (presence_abundance[pos, 4] - presence_abundance[1, 4]) / pos
+  right &lt;- (presence_abundance[nrow(presence_abundance), 4] - presence_abundance[pos, 4]) / (nrow(presence_abundance) - pos)
+  return(left - right)
+}
+presence_abundance$fo_diffs &lt;- sapply(1:nrow(presence_abundance), fo_difference)
+presence_abundance[is.na(presence_abundance)] &lt;- 0</code></pre>
+<p>Let’s go ahead and plot the first-order differences against the cumulative percentage:</p>
+<pre class="r"><code>presence_abundance %&gt;% 
+  mutate(fo_diffs = fo_diffs / max(fo_diffs) * max(abundance)) %&gt;% 
+  ggplot(aes(x = reorder(gene, -abundance), group = 1)) +
+  theme_light() + 
+  geom_line(aes(y = fo_diffs)) + 
+  geom_line(aes(y = cumulative_percent), color = &quot;red&quot;, linetype = &quot;dashed&quot;) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) + 
+  labs(x = &quot;&quot;,
+       y = &quot;Abundance&quot;,
+       title = &quot;Abundance of representative genes in sample metagenomes&quot;)</code></pre>
+<p><img src="lesson_2_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
+<p>All that’s left to do is to identify the cluster that achieves the maximal first-order difference. This can be done with the following:</p>
+<pre class="r"><code>(elbow &lt;- which.max(presence_abundance$fo_diffs))</code></pre>
+<pre><code>## [1] 6</code></pre>
+<p>Now we can add a vertical line to the plot with <code>geom_vline</code>:</p>
+<pre class="r"><code>presence_abundance %&gt;% 
+  mutate(fo_diffs = fo_diffs / max(fo_diffs) * max(abundance)) %&gt;% 
+  ggplot(aes(x = reorder(gene, -abundance), group = 1)) +
+  theme_light() + 
+  geom_line(aes(y = fo_diffs)) + 
+  geom_line(aes(y = cumulative_percent), color = &quot;red&quot;, linetype = &quot;dashed&quot;) + 
+  geom_vline(xintercept = elbow, color = &quot;red&quot;) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) + 
+  labs(x = &quot;&quot;,
+       y = &quot;Abundance&quot;,
+       title = &quot;Abundance of representative genes in sample metagenomes&quot;)</code></pre>
+<p><img src="lesson_2_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
 </div>
 
 <p><br>
