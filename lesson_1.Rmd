@@ -111,7 +111,7 @@ head data/sequence_info/amoa_nuc.fa
 
 ### Exercise 1.3
 
-* The `amoa_nuc.fa` and `amoa_prot.fa` files represent nucleotide and protein sequences of the same gene. What are some sanity checks you can do to make sure these files pass a sanity check?
+* The `amoa_nuc.fa` and `amoa_prot.fa` files represent nucleotide and protein sequences of the same gene. What are some sanity checks you can do to make sure these files at least look correct?
 * What do you know about `fasta` files that you can use to count the number of sequences in a file? 
 * Remember that our goal is to collect the number of clusters found at each of the different similarity thresholds. This information is in the `.fa.clstr` files. How are those files structured? How would you count the number of clusters in a single file? How can you expand this command to do this over all the files? 
 * A large part of programming is being able to effectively search for answers and adapt them to your own needs. Modify the answer in [this Stack Overflow post](https://stackoverflow.com/questions/34134756/tab-separated-output-from-grep) to make your output look what is printed out below, and save it to a file called `cluster_counts.tsv`:
