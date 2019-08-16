@@ -97,8 +97,6 @@ grep -io sunday data/practice_data/sunday.txt | wc -l
 
 * How many lines does the word "Monday" appear on in `monday.txt`? How many occurrences of "Monday" are there?
 
-
-
 ## Working with `fasta` files
 
 Now that we have a bit of practice with `grep`, let's return to the problem at hand. The `data/sequence_info` directory has the nucleotide and protein sequences for our genes of interest. Let's take a look at them:
@@ -111,17 +109,85 @@ head data/sequence_info/amoa_prot.fa
 head data/sequence_info/amoa_nuc.fa
 ```
 
-
-
-```{bash}
-pwd
-```
-
 ### Exercise 1.3
 
 * The `amoa_nuc.fa` and `amoa_prot.fa` files represent nucleotide and protein sequences of the same gene. What are some sanity checks you can do to make sure these files pass a sanity check?
 * What do you know about `fasta` files that you can use to count the number of sequences in a file? 
-* Remember that our goal is to collect the number of clusters found at each of the different similarity thresholds. This information is in the various `.fa.clstr` files. How are those files structured? How would you count the number of clusters in a single file? How can you expand this command to do this over all the files?
+* Remember that our goal is to collect the number of clusters found at each of the different similarity thresholds. This information is in the `.fa.clstr` files. How are those files structured? How would you count the number of clusters in a single file? How can you expand this command to do this over all the files? 
+* A large part of programming is being able to effectively search for answers and adapt them to your own needs. Modify the answer in [this Stack Overflow post](https://stackoverflow.com/questions/34134756/tab-separated-output-from-grep) to make your output look what is printed out below, and save it to a file called `cluster_counts.tsv`:
 
-## Determine which clusters to include 
+```{bash, echo = FALSE}
+grep -c ^">" data/cluster_information/*.fa.clstr | sed 's/.fa.clstr:/   /g' | sed 's/data\/cluster_information\///g'
+```
 
+## Sorting files
+
+So we now have the clustering information for the different similarity thresholds. To decide the threshold at which we're going to cluster, we're going to choose the point on this curve that maximizes the first-order difference (see [here](https://pommevilla.github.io/random/elbows.html) for more info). Writing this code is outside the scope of this class, so for now, copy and paste the lines below into your terminal:
+
+```{bash}
+cat data/cluster_information/cluster_counts.tsv | awk -F "\t" 'BEGIN {OFS="\t"} NR==1{max==2} {left = (max - $2) / NR; NR==20 ? right = 0: right = (-$2) / (20 - NR) ; print $1 OFS $2 OFS left - right}' > temp
+```
+
+```{bash}
+mv temp cluster_counts.tsv
+```
+
+What the code above did was calculate the first-order differences at each point along the similarity curve, saved it to a temporary file `temp`, and overwrote the original `cluster_counts.tsv`. 
+
+Before we go any further, let's review `cut` and `sort`.
+
+The `cut` command returns the indicated columns from your file. For this example, we're going to work with the `tft_stats.tsv` file. `tft_stats.tsv` (adapted from [here](https://www.esportstales.com/teamfight-tactics/seasonal-rank-system-and-player-distribution)) shows the distribution of the player base across the various rankings of [Teamfight Tactics](https://na.leagueoflegends.com/en/featured/events/teamfight-tactics). Let's see what it looks like:
+
+```{bash}
+cat data/practice_data/tft_stats.tsv
+```
+
+A call of the `cut` function looks like:
+
+```{bash, eval = FALSE}
+cut -d <char> -f <n> <file>
+```
+
+where:
+
+* `file` is your input file
+* `-d` is the delimiter; `cut` will separate the columns of `file` based on this argument
+* `-f` is the column you want
+
+By default, `cut` assumes that the file is tab-delimited. Since `tft_stats.tsv` is tab-delimited, we can go ahead and pull, say, just the first column:
+
+```{bash}
+cut -f 1 data/practice_data/tft_stats.tsv
+```
+
+If we wanted the first two columns, we can do:
+
+```{bash}
+cut -f 1,2 data/practice_data/tft_stats.tsv
+```
+
+and etc. Another usual function is `sort`. This function will sort a file by the indicated column. 
+
+A call to the `sort` function looks like:
+
+```{bash, eval = FALSE}
+cut -t <char> -k <n> <file>
+```
+
+where:
+
+* `file` is your input file
+* `-t` is the delimiter; `sort` will separate the columns of `file` based on this argument
+* `-k` is the column you wish to sort on
+
+Let's try sorting the file based on the third column:
+
+```{bash}
+sort -k 3 data/practice_data/tft_stats.tsv
+```
+
+### Exercise 1.4
+
+* By default, `sort` will sort the column based on string value. Look up the flag to sort based on numeric value. Look up the flag to reverse the sorting. Sort `tft_stats.tsv` based on the third column. Which division and rank had the most players in it?
+* `ephraims_cards.tsv` is a list of my friend's cards, their market value, the quantity he has of each, and the total combined. Use `cut` to access the third column and the fourth column. Use `sort` to find out which card has the most value, then use it again to find out which combination of card and quantity has the most value.
+* We now return to `cluster_counts.tsv`. Recall that we are trying to determine the optimum threshold at which to cluster our sequences, and that the criterion we're using is the first-order difference. Which similarity threshold should we cluster our sequences at?

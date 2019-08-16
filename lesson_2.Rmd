@@ -8,3 +8,5 @@ knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 ```
 
 ## Determine which clusters to include
+
+According to the first-order difference criterion, the optimal clustering similarity was 
