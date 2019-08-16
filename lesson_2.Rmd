@@ -144,7 +144,7 @@ tft_stats %>%
 There are several things wrong with the `tft_stats` graph.
 
 * What's wrong with the y-axis? Use `mutate` to correct this.
-* What's wrong with the cumulative percentage line? How can we fix this? What do you think about the clarity of this graph?
+* What's wrong with the cumulative percentage line? How can we fix this? Hint: Using [min-max normalization](https://en.wikipedia.org/wiki/Feature_scaling) (with the `max` function) will get you part of the way there. What can you multiply this rescaled number by to fit with the rest of the graph? What do you think about the clarity of this graph?
 * After fixing the line, pretty up the rest of the graph. Make the cumulative percentage line dashed.
 
 Read in `abundance_presence.tsv` with:
@@ -246,3 +246,26 @@ presence_abundance %>%
 
 * While we have identified the optimal line, it may be the case that points which are less optimal theoretically are more desirable for other practical reasons. For instance, suppose that we are okay with inclusion thresholds within 10% of the point which maximizes the first-order difference. How would you find this neighborhood? Show it on the graph using `geom_vline`?
 * The first-order difference only took into account the abundance of each particular gene. How might we also account for the presence of gene across the metagenome?
+
+## Getting the nucleotide sequences for primer design
+
+Now that we have decided on a cluster inclusion threshold, we can now prepare a `fasta` file for input into a primer design software. So far, we have been working with the protein sequences. [EcoFunPrimer](https://github.com/rdpstaff/EcoFunPrimer), the primer design software that we are preparing this for, requires a `fasta` file of nucleotide sequences. The file `amoa_nuc.fa` contains the corresponding nucleotide sequences for each of the protein sequences we have. However, the sequence names are not the same between the two files. We have the mapping between the protein and nucleotide sequences in the `protein_nucleotide_mapping.tsv`. Let's take a look at it:
+
+```{bash}
+head data/sequence_info/protein_nucleotide_mapping.tsv
+```
+
+We know enough to extract the nucleotide sequence ID from the mapping file for each of the protein clusters that we're including, and use that to search the `amoa_nuc.fa` file for the sequences.
+
+```{r}
+presence_abundance[1:6, ] 
+```
+
+
+## Exercise 2.4
+* Subset the `presence_abundance` data frame to include all the sequences up until the inclusion threshold and extract the gene name column. Read the documentation for `write_tsv` to write this out to a file called `abundant_genes.tsv`. Write this without the column names.
+* We now want to search `protein_nucleotide_mapping.tsv` for the corresponding nucleotide ID sequences. In other words, we want to grep `protein_nucleotide_mapping.tsv` with multiple search terms. Note that this is the opposite situation from what we did at the beginning of this workshop where we searched multiple files for one search term. Look through the `grep` documentation and find out which flag to use to use a file for input. Extract only the nucleotide sequence from this output.
+* Pipe this output to another `grep` command to search the `amoa_nuc.fa` file for these sequences. This will give us the sequence headers, but we also want the actual sequences. Look through the `grep` documentation (or search online) to figure out how to include a certain number of lines after a successful match. How many lines should we include afterwards? What are some considerations regarding `fasta` file content that we have to keep in mind when doing this?
+
+
+And that's it! Go ahead and save this to a file called `abundant_genes.fa`.

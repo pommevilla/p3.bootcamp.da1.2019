@@ -585,7 +585,7 @@ tft_stats</code></pre>
 <p>There are several things wrong with the <code>tft_stats</code> graph.</p>
 <ul>
 <li>What’s wrong with the y-axis? Use <code>mutate</code> to correct this.</li>
-<li>What’s wrong with the cumulative percentage line? How can we fix this? What do you think about the clarity of this graph?</li>
+<li>What’s wrong with the cumulative percentage line? How can we fix this? Hint: Using <a href="https://en.wikipedia.org/wiki/Feature_scaling">min-max normalization</a> (with the <code>max</code> function) will get you part of the way there. What can you multiply this rescaled number by to fit with the rest of the graph? What do you think about the clarity of this graph?</li>
 <li>After fixing the line, pretty up the rest of the graph. Make the cumulative percentage line dashed.</li>
 </ul>
 <p>Read in <code>abundance_presence.tsv</code> with:</p>
@@ -709,6 +709,39 @@ presence_abundance[is.na(presence_abundance)] &lt;- 0</code></pre>
 <li>The first-order difference only took into account the abundance of each particular gene. How might we also account for the presence of gene across the metagenome?</li>
 </ul>
 </div>
+</div>
+<div id="getting-the-nucleotide-sequences-for-primer-design" class="section level2">
+<h2>Getting the nucleotide sequences for primer design</h2>
+<p>Now that we have decided on a cluster inclusion threshold, we can now prepare a <code>fasta</code> file for input into a primer design software. So far, we have been working with the protein sequences. <a href="https://github.com/rdpstaff/EcoFunPrimer">EcoFunPrimer</a>, the primer design software that we are preparing this for, requires a <code>fasta</code> file of nucleotide sequences. The file <code>amoa_nuc.fa</code> contains the corresponding nucleotide sequences for each of the protein sequences we have. However, the sequence names are not the same between the two files. We have the mapping between the protein and nucleotide sequences in the <code>protein_nucleotide_mapping.tsv</code>. Let’s take a look at it:</p>
+<pre class="bash"><code>head data/sequence_info/protein_nucleotide_mapping.tsv</code></pre>
+<pre><code>## prot_id  nuc_id
+## AAA66194 L08050
+## AAB08985 U51630
+## AAB16816 U72670
+## AAB38709 U76553
+## AAB38710 U76552
+## AAB48015 U15733
+## AAB48534 U89833
+## AAB51760 U91603
+## AAB53437 U92432</code></pre>
+<p>We know enough to extract the nucleotide sequence ID from the mapping file for each of the protein clusters that we’re including, and use that to search the <code>amoa_nuc.fa</code> file for the sequences.</p>
+<pre class="r"><code>presence_abundance[1:6, ] </code></pre>
+<pre><code>##               gene abundance presence cumulative_percent  fo_diffs
+## 1 AAB38709              4100      266           1283.696 -90.84851
+## 2 ABM54175              1846      254           1861.672 214.37724
+## 3 AAC25057              1349      234           2284.040 270.82856
+## 4 SEF68642              1249      255           2675.097 296.96094
+## 5 KIO48008              1015      189           2992.890 300.83481
+## 6 ADE13856              1007      114           3308.179 306.95911</code></pre>
+</div>
+<div id="exercise-2.4" class="section level2">
+<h2>Exercise 2.4</h2>
+<ul>
+<li>Subset the <code>presence_abundance</code> data frame to include all the sequences up until the inclusion threshold and extract the gene name column. Read the documentation for <code>write_tsv</code> to write this out to a file called <code>abundant_genes.tsv</code>. Write this without the column names.</li>
+<li>We now want to search <code>protein_nucleotide_mapping.tsv</code> for the corresponding nucleotide ID sequences. In other words, we want to grep <code>protein_nucleotide_mapping.tsv</code> with multiple search terms. Note that this is the opposite situation from what we did at the beginning of this workshop where we searched multiple files for one search term. Look through the <code>grep</code> documentation and find out which flag to use to use a file for input. Extract only the nucleotide sequence from this output.</li>
+<li>Pipe this output to another <code>grep</code> command to search the <code>amoa_nuc.fa</code> file for these sequences. This will give us the sequence headers, but we also want the actual sequences. Look through the <code>grep</code> documentation (or search online) to figure out how to include a certain number of lines after a successful match. How many lines should we include afterwards? What are some considerations regarding <code>fasta</code> file content that we have to keep in mind when doing this?</li>
+</ul>
+<p>And that’s it! Go ahead and save this to a file called <code>abundant_genes.fa</code>.</p>
 </div>
 
 <p><br>

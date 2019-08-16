@@ -30,6 +30,13 @@ Finally, clone this repository by entering the following into your command line:
 git clone https://github.com/pommevilla/p3.bootcamp.da1.2019.git
 ```
 
+I encourage you to do the following:
+
+* Work together with a partner
+* Look up function documentation
+* Search online for help
+* Ask questions
+
 [p3-landing]: https://www.predictivephenomicsinplants.iastate.edu/
 [intro-to-r]: https://github.com/pommevilla/p3.bootcamp.r.2019
 [intro-to-python]: https://github.com/pommevilla/p3.bootcamp.python.2019
