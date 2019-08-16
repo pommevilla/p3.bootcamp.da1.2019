@@ -241,3 +241,8 @@ presence_abundance %>%
        y = "Abundance",
        title = "Abundance of representative genes in sample metagenomes")
 ```
+
+### Exercise 2.3
+
+* While we have identified the optimal line, it may be the case that points which are less optimal theoretically are more desirable for other practical reasons. For instance, suppose that we are okay with inclusion thresholds within 10% of the point which maximizes the first-order difference. How would you find this neighborhood? Show it on the graph using `geom_vline`?
+* The first-order difference only took into account the abundance of each particular gene. How might we also account for the presence of gene across the metagenome?

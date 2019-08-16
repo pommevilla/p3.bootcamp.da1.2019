@@ -358,7 +358,7 @@ div.tocify {
   <a href="lesson_1.html">Shell scripting, visualizations</a>
 </li>
 <li>
-  <a href="lesson_2.html">Basic visualizations</a>
+  <a href="lesson_2.html">Data visualization and analysis</a>
 </li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
@@ -702,6 +702,13 @@ presence_abundance[is.na(presence_abundance)] &lt;- 0</code></pre>
        y = &quot;Abundance&quot;,
        title = &quot;Abundance of representative genes in sample metagenomes&quot;)</code></pre>
 <p><img src="lesson_2_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
+<div id="exercise-2.3" class="section level3">
+<h3>Exercise 2.3</h3>
+<ul>
+<li>While we have identified the optimal line, it may be the case that points which are less optimal theoretically are more desirable for other practical reasons. For instance, suppose that we are okay with inclusion thresholds within 10% of the point which maximizes the first-order difference. How would you find this neighborhood? Show it on the graph using <code>geom_vline</code>?</li>
+<li>The first-order difference only took into account the abundance of each particular gene. How might we also account for the presence of gene across the metagenome?</li>
+</ul>
+</div>
 </div>
 
 <p><br>

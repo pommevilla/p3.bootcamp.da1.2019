@@ -9,7 +9,7 @@ navbar:
     href: introduction.html
   - text: Shell scripting, visualizations
     href: lesson_1.html
-  - text: Basic visualizations
+  - text: Data visualization and analysis
     href: lesson_2.html
 
     
