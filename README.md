@@ -1,6 +1,6 @@
-# P3 Programming Bootcamp 2019: Introduction to Python
+# P3 Programming Bootcamp 2019: Data Applications 1 
 
-Materials for the *Introduction to Python section* of the Programming Bootcamp hosted by the [Predictive Plant Phenomics (P3) NRT program][p3-landing] on August 7-10, 2018.  These workshops are intended as a gentle introduction for those who have little to no experience in R, Python, and UNIX.  There are four parts to this workshop:
+Materials for the *Data Applications 1* of the Programming Bootcamp hosted by the [Predictive Plant Phenomics (P3) NRT program][p3-landing] on August 16, 2019.  These workshops are intended as an introduction for those who have little to no experience in R, Python, and UNIX.  There are four parts to this workshop:
 
 * [*Introduction to R*][intro-to-r] taught by [Paul Villanueva][paul-github]. 
 * [*Introduction to Python*][intro-to-python] taught by [Paul Villanueva][paul-github]. 
@@ -9,7 +9,12 @@ Materials for the *Introduction to Python section* of the Programming Bootcamp h
 
 ## About this Workshop
 
-* RMarkdown + Shell + 
+The previous workshops in this bootcamp were focused on introducing some basic functionality of the languages to people who had 0 previous exposure. This workshop builds upon those skills by working through some real tasks and problems that you may encounter in your work.
+
+The sections of this workshop are:
+
+* File manipulation on the command line 
+* Visualizing data
 * Machine learning
 
 ## Contact
