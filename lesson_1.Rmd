@@ -20,9 +20,88 @@ Today, we will working on the *Filter* step. This step is comprised of the follo
 
 Querying the sequences against all the metagenomes takes more computational resources and time than are available to us today, so we will only be reproducing steps 1, 3, and 4.
 
-## Choosing an optimum similarity threshold
 
-Let's begin by looking at our input files. The `data/sequence_info` directory has the nucleotide and protein sequences for our gene of interest. Let's take a look at them:
+# Choosing an optimum similarity threshold for gene clustering 
+
+The first step in the filtering process is to choose an optimum clustering threshold for our sequences. Sequences don't have to be 100% similar to code for the same function, so by clustering the genes together at a lower similarity threshold may allow us to hit all of our gene targets with fewer probes. 
+
+To perform the clustering, we have used the [CD-Hit](http://cd-hit.org/) program. CD-Hit accepts as input a `fasta` file and a similarity threshold and sorts the sequences into clusters. The output from this program are in `data/cluster_information` folder. They are of form `x.xx.fa` and `x.xx.fa.clstr`, where:
+
+* `x.xx` is the similarity threshold
+* `.fa.clstr` contains the clustering information
+* `.fa` contains the sequence of each cluster representative
+
+Now that we have all the clustering information from CD-Hit for our target sequences of varying thresholds, our job is to collect all of this information, use it to select an optimal similarity threshold, and collect the representative sequences for querying against our metagenomes.
+
+Let's begin with a review of `grep`.
+
+## grep
+
+The `grep` function searches through a file for a search term. It has the following basic syntax
+
+```{bash, eval = FALSE}
+grep <flags> search_term file
+```
+
+For example, if we wanted to find if the word "summer" was in `summer_days.txt`, we would do the following:
+
+```{bash}
+grep "summer" data/practice_data/summer_days.txt
+```
+
+This shows us the four lines that the word "summer" was found on. Let's see what happens when we look for a word that isn't there:
+
+```{bash, eval = FALSE}
+grep "winter" data/practice_data/summer_days.txt
+```
+
+Nothing pops up, as expected.
+
+`grep` has a ton of flags that we can pass at the command line, only a few of which we'll cover today. For example, we can pass the `-v` flag to **invert** the match, returning every line on which the match wasn't found. So, to find all the lines on which "summer" **doesn't** appear, we would do:
+
+```{bash}
+grep -v "summer" data/practice_data/summer_days.txt
+```
+
+### Exercise 1.1
+
+* With our last command, we searched for the all the lines in which the term "summer" doesn't appear - does the output look correct? Search the `man` page (via `man grep`) and look for the flag to make the `grep` search case-insensitive.
+* Use the `|` operator to pipe the output from the above search to `wc`. How many lines was summer found on? Is there a smarter way to do this? Hint: check the `man` page.
+* Find the flag to output the line number with the matches.
+
+By default, `grep` only outputs the lines on which the match was found. This can lead to situations where using the `-c` flag to count occurrences of a term is inaccurate. For example, let's find all the lines on which the word "sunday" appears in `sunday.txt`:
+
+```{bash}
+grep -i sunday data/practice_data/sunday.txt
+```
+
+Now, let's see what `-c` says:
+
+```{bash}
+grep -ic sunday data/practice_data/sunday.txt
+```
+
+We can correct this by using the `-o` flag, which tells `grep` to output each occurrence of the search term on a separate line:
+
+```{bash}
+grep -io sunday data/practice_data/sunday.txt
+```
+
+From here, we can pipe to `wc` to get the number of occurrences:
+
+```{bash}
+grep -io sunday data/practice_data/sunday.txt | wc -l
+```
+
+### Exercise 1.2
+
+* How many lines does the word "Monday" appear on in `monday.txt`? How many occurrences of "Monday" are there?
+
+
+
+## Working with `fasta` files
+
+Now that we have a bit of practice with `grep`, let's return to the problem at hand. The `data/sequence_info` directory has the nucleotide and protein sequences for our genes of interest. Let's take a look at them:
 
 ```{bash}
 head data/sequence_info/amoa_prot.fa
@@ -33,16 +112,16 @@ head data/sequence_info/amoa_nuc.fa
 ```
 
 
+
 ```{bash}
 pwd
 ```
 
+### Exercise 1.3
 
-### A review of `grep`
-
-The `grep` function is used to search a file (or stream) for a term of interest. For example, 
-
-#### Exercise
+* The `amoa_nuc.fa` and `amoa_prot.fa` files represent nucleotide and protein sequences of the same gene. What are some sanity checks you can do to make sure these files pass a sanity check?
+* What do you know about `fasta` files that you can use to count the number of sequences in a file? 
+* Remember that our goal is to collect the number of clusters found at each of the different similarity thresholds. This information is in the various `.fa.clstr` files. How are those files structured? How would you count the number of clusters in a single file? How can you expand this command to do this over all the files?
 
 ## Determine which clusters to include 
 

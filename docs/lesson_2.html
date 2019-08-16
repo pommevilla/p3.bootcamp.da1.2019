@@ -12,7 +12,7 @@
 
 
 
-<title>Lesson 2: Basic visualizations</title>
+<title>Data visualization and analysis</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -372,145 +372,13 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">Lesson 2: Basic visualizations</h1>
+<h1 class="title toc-ignore">Data visualization and analysis</h1>
 
 </div>
 
 
-<div id="what-is-ggplot" class="section level2">
-<h2>What is ggplot?</h2>
-<p>Hadley Wickham, chief scientist at RStudio (and ISU alum!), said in <a href="https://vita.had.co.nz/papers/layered-grammar.pdf">A Layered Grammar of Graphics</a>:</p>
-<blockquote>
-<p>A grammar of graphics is a tool that enables us to concisely describe the components of a graphic.</p>
-</blockquote>
-<p>The <code>ggplot2</code> package is built around the idea of “building up a graphic from multiple layers of data.” In other words, we’re building up our plot from individual pieces, one function call at a time.</p>
-<p>The function call for ggplot is:</p>
-<pre class="r"><code>ggplot(data, mapping = aes(...)) + 
-  &lt;geom_layers&gt; + 
-  &lt;additional layers&gt;</code></pre>
-<p>Here, each of the different objects represents a layer:</p>
-<p><em><code>data</code> is the data object that you would like to visualize and <code>mapping</code> contains the aesthetic mappings to use; that is, the mapping of which aesthetics to which variables. </em><code>geom_layers</code> are what actually draw the points onto the canvas; for example, <code>geom_point</code> will create a scatter plot. * There are additional layers you can use to make your graph prettier.</p>
-<p>A <code>ggplot</code> call might look like:</p>
-<pre class="r"><code>mtcars %&gt;% 
-  ggplot(aes(x = wt, y = mpg)) + 
-  geom_point()</code></pre>
-<p><img src="lesson_2_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
-<p>Let’s change the x- and y-axis titles to be a little more informative:</p>
-<pre class="r"><code>mtcars %&gt;% 
-  ggplot(aes(x = wt, y = mpg)) + 
-  geom_point() +
-  labs(x = &quot;Weight (in thousands of lbs)&quot;,
-       y = &quot;Miles per gallon&quot;)</code></pre>
-<p><img src="lesson_2_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
-<p>We can also introduce other aesthetics into the plot. For example, let’s color the dots by the number of cylinders they have:</p>
-<pre class="r"><code>mtcars %&gt;% 
-  ggplot(aes(x = wt, y = mpg)) + 
-  geom_point(aes(color = cyl)) +
-  labs(x = &quot;Weight (in thousands of lbs)&quot;,
-       y = &quot;Miles per gallon&quot;)</code></pre>
-<p><img src="lesson_2_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
-<p>We can also change the size of the points by setting <code>size</code> to a specific number:</p>
-<pre class="r"><code>mtcars %&gt;% 
-  ggplot(aes(x = wt, y = mpg)) + 
-  geom_point(aes(color = cyl), 
-             size = 3) +
-  labs(x = &quot;Weight (in thousands of lbs)&quot;,
-       y = &quot;Miles per gallon&quot;)</code></pre>
-<p><img src="lesson_2_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
-<p>And let’s change a few more things to make the graph a bit prettier:</p>
-<pre class="r"><code>mtcars %&gt;% 
-  ggplot(aes(x = wt, y = mpg)) + 
-  geom_point(aes(color = cyl)) +
-  labs(x = &quot;Weight&quot;,
-       y = &quot;Miles per gallon&quot;,
-       title = &quot;Miles per gallon versus weight for automobiles&quot;,
-       subtitle = &quot;Data from Motor Trend magazine&quot;) + 
-  theme_light()</code></pre>
-<p><img src="lesson_2_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
-<div id="exercises-2.1" class="section level3">
-<h3>Exercises 2.1</h3>
-<ul>
-<li>We colored the points according to the number of cylinders it has, but there’s something wrong with it. What is it? How can we fix it?</li>
-<li>What are some things we can do to improve this graph?</li>
-<li>What are conclusions you can draw from this graph?</li>
-<li>Experiment with the color aesthetic by mapping it to different variables. Try mapping another variable to the <code>size</code> aesthetic (<code>qsec</code>, for instance).</li>
-<li>Use <code>?theme_light</code> and try out a few other themes.</li>
-</ul>
-</div>
-</div>
-<div id="more-practice" class="section level2">
-<h2>More practice</h2>
-<p>For the rest of the day, we’re going to work more with the <code>flights</code> dataset. Let’s begin by getting a histogram of the flights using <code>geom_bar</code>:</p>
-<pre class="r"><code>flights %&gt;% 
-  ggplot(aes(x = carrier)) + 
-  geom_bar()</code></pre>
-<p><img src="lesson_2_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
-<p>We can look up the airline codes by using <code>airlines</code>. Doing so, we see that United Airlines, JetBlue, and ExpressJet Airlines have the most flights out of New York in 2013.</p>
-<pre class="r"><code>airlines %&gt;% 
-  filter(carrier %in% c(&quot;UA&quot;, &quot;EV&quot;, &quot;B6&quot;))</code></pre>
-<pre><code>## # A tibble: 3 x 2
-##   carrier name                    
-##   &lt;chr&gt;   &lt;chr&gt;                   
-## 1 B6      JetBlue Airways         
-## 2 EV      ExpressJet Airlines Inc.
-## 3 UA      United Air Lines Inc.</code></pre>
-<p>Let’s fill in the bars with the name of the origin airport:</p>
-<pre class="r"><code>flights %&gt;% 
-  ggplot(aes(x = carrier, fill = origin)) + 
-  geom_bar()</code></pre>
-<p><img src="lesson_2_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
-<p>Let’s polish the graph a little:</p>
-<pre class="r"><code>flights %&gt;% 
-  ggplot(aes(x = carrier, fill = origin)) + 
-  geom_bar() + 
-  labs(x = &quot;Carrier&quot;,
-       y = &quot;&quot;,
-       title = &quot;Number of flights from New York airports by carrier&quot;,
-       fill = &quot;Origin&quot;)</code></pre>
-<p><img src="lesson_2_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
-<p>Next, let’s try and use the full carrier name. We have access to the carrier name from the <code>airlines</code> list. We will use <code>inner_join</code> to add the information from <code>airlines</code> to the <code>flights</code> data:</p>
-<pre class="r"><code>flights %&gt;% 
-  inner_join(airlines, by = &quot;carrier&quot;)</code></pre>
-<pre><code>## # A tibble: 336,776 x 20
-##     year month   day dep_time sched_dep_time dep_delay arr_time
-##    &lt;int&gt; &lt;int&gt; &lt;int&gt;    &lt;int&gt;          &lt;int&gt;     &lt;dbl&gt;    &lt;int&gt;
-##  1  2013     1     1      517            515         2      830
-##  2  2013     1     1      533            529         4      850
-##  3  2013     1     1      542            540         2      923
-##  4  2013     1     1      544            545        -1     1004
-##  5  2013     1     1      554            600        -6      812
-##  6  2013     1     1      554            558        -4      740
-##  7  2013     1     1      555            600        -5      913
-##  8  2013     1     1      557            600        -3      709
-##  9  2013     1     1      557            600        -3      838
-## 10  2013     1     1      558            600        -2      753
-## # … with 336,766 more rows, and 13 more variables: sched_arr_time &lt;int&gt;,
-## #   arr_delay &lt;dbl&gt;, carrier &lt;chr&gt;, flight &lt;int&gt;, tailnum &lt;chr&gt;,
-## #   origin &lt;chr&gt;, dest &lt;chr&gt;, air_time &lt;dbl&gt;, distance &lt;dbl&gt;, hour &lt;dbl&gt;,
-## #   minute &lt;dbl&gt;, time_hour &lt;dttm&gt;, name &lt;chr&gt;</code></pre>
-<p>Now we have an additional column at the end for the full name of the carrier. Let’s revisit our earlier graph with this new information:</p>
-<pre class="r"><code>flights %&gt;% 
-  inner_join(airlines, by = &quot;carrier&quot;) %&gt;% 
-  ggplot(aes(x = name, fill = origin)) + 
-  geom_bar() + 
-  labs(x = &quot;Carrier&quot;,
-       y = &quot;&quot;,
-       title = &quot;Number of flights from New York airports by carrier&quot;,
-       fill = &quot;Origin&quot;) </code></pre>
-<p><img src="lesson_2_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
-<div id="exercise-2.2" class="section level3">
-<h3>Exercise 2.2</h3>
-<ul>
-<li>The text at the bottom is super cluttered now. Look up <code>?theme</code> and look at <code>axis.text.x</code> to learn how to rotate the text. Feel free to search online, also.</li>
-<li>The <code>airports</code> data contains full airport names for several airports. Repeat the <code>inner_join</code> process above to combine this information into the data frame above. Look at the resulting data frame. What do you see different here? How can you use what you’ve learned today to fix this? Hint: One solution is to use <code>mutate</code>.</li>
-<li>There’s a lot of information on the chart, and stacking the bar plots might not be the most informative way to present it. Look up <code>facet_wrap</code> and use it to separate the chart into there separate bar plots. Alternatively, read the Details section of the documentation for <code>geom_bar</code> for another way to address this problem.</li>
-<li>Reproduce the following graph (borrowed heavily from <a href="https://www.andrew.cmu.edu/user/achoulde/94842/lectures/lecture12/lecture12-94842.html">Alexandra Chouldechova</a>). How can it be improved?</li>
-</ul>
-<p><img src="lesson_2_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
-<ul>
-<li>Next section: <a href="https://pommevilla.github.io/p3.bootcamp.r.2019/next_steps.html">Next steps</a></li>
-</ul>
-</div>
+<div id="determine-which-clusters-to-include" class="section level2">
+<h2>Determine which clusters to include</h2>
 </div>
 
 <p><br>

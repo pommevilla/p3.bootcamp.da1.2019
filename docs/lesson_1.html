@@ -12,7 +12,7 @@
 
 
 
-<title>Lesson 1: R Basics</title>
+<title>File manipulation from the command line</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -372,809 +372,203 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">Lesson 1: R Basics</h1>
+<h1 class="title toc-ignore">File manipulation from the command line</h1>
 
 </div>
 
 
-<div id="basic-arithmetic-assignment" class="section level2">
-<h2>Basic arithmetic, assignment</h2>
-<p>The normal mathematic operators work in R, and they follow the order of operations:</p>
-<pre class="r"><code>1 / 20 * 30</code></pre>
-<pre><code>## [1] 1.5</code></pre>
-<p>You can use parentheses to change the order in which the expressions are calculated:</p>
-<pre class="r"><code>1 / (20 * 30)</code></pre>
-<pre><code>## [1] 0.001666667</code></pre>
-<pre class="r"><code>cos(2 * pi)</code></pre>
-<pre><code>## [1] 1</code></pre>
-<p>You can assign values to objects with <code>&lt;-</code>, the assignment operator. The shortcut for this is:</p>
+<p>I’m currently developing a primer design pipeline for the <a href="http://www.germslab.org/">GERMS lab</a>. The pipeline takes as input a <code>fasta</code> file containing the genes of interest and a directory of metagenomes. The pipeline then clusters the genes, identifies which genes are abundant in the submitted metagenomes, and designs primers for those sequences. See below for an overview of the process:</p>
+<div class="figure">
+<img src="data/metafunprimer.png" alt="MetaFunPrimer flowchart" />
+<p class="caption">MetaFunPrimer flowchart</p>
+</div>
+<p>Today, we will working on the <em>Filter</em> step. This step is comprised of the following:</p>
+<ol style="list-style-type: decimal">
+<li>Choose an optimum similarity threshold for gene clustering</li>
+<li>Quantify environmental abundance and presence by BLAST the representative sequences against the metagenomes</li>
+<li>Determine which clusters to include</li>
+<li>Extract the nucleotide sequences</li>
+</ol>
+<p>Querying the sequences against all the metagenomes takes more computational resources and time than are available to us today, so we will only be reproducing steps 1, 3, and 4.</p>
+<div id="choosing-an-optimum-similarity-threshold-for-gene-clustering" class="section level1">
+<h1>Choosing an optimum similarity threshold for gene clustering</h1>
+<p>The first step in the filtering process is to choose an optimum clustering threshold for our sequences. Sequences don’t have to be 100% similar to code for the same function, so by clustering the genes together at a lower similarity threshold may allow us to hit all of our gene targets with fewer probes.</p>
+<p>To perform the clustering, we have used the <a href="http://cd-hit.org/">CD-Hit</a> program. CD-Hit accepts as input a <code>fasta</code> file and a similarity threshold and sorts the sequences into clusters. The output from this program are in <code>data/cluster_information</code> folder. They are of form <code>x.xx.fa</code> and <code>x.xx.fa.clstr</code>, where:</p>
 <ul>
-<li>For Windows Users, <code>Alt</code> + <code>-</code></li>
-<li>For Mac Users, <code>Cmd</code> + <code>-</code></li>
+<li><code>x.xx</code> is the similarity threshold</li>
+<li><code>.fa.clstr</code> contains the clustering information</li>
+<li><code>.fa</code> contains the sequence of each cluster representative</li>
 </ul>
-<p>After assignment, we can perform whatever operations we would like with that variable:</p>
-<pre class="r"><code>x &lt;- 5
-x + 5</code></pre>
-<pre><code>## [1] 10</code></pre>
-<pre class="r"><code>sin(2 * x)</code></pre>
-<pre><code>## [1] -0.5440211</code></pre>
-<pre class="r"><code>x * 500 / sin(x)</code></pre>
-<pre><code>## [1] -2607.088</code></pre>
-<p>R also has the modulus operator <code>%%</code>, which returns the remainder when <code>x</code> is divided by <code>y</code>. For example:</p>
-<pre class="r"><code>5 %% 2</code></pre>
-<pre><code>## [1] 1</code></pre>
+<p>Now that we have all the clustering information from CD-Hit for our target sequences of varying thresholds, our job is to collect all of this information, use it to select an optimal similarity threshold, and collect the representative sequences for querying against our metagenomes.</p>
+<p>Let’s begin with a review of <code>grep</code>.</p>
+<div id="grep" class="section level2">
+<h2>grep</h2>
+<p>The <code>grep</code> function searches through a file for a search term. It has the following basic syntax</p>
+<pre class="bash"><code>grep &lt;flags&gt; search_term file</code></pre>
+<p>For example, if we wanted to find if the word “summer” was in <code>summer_days.txt</code>, we would do the following:</p>
+<pre class="bash"><code>grep &quot;summer&quot; data/practice_data/summer_days.txt</code></pre>
+<pre><code>## Summer days (like the summer days)
+## Summer days (like the summer days)
+## Summer days (like the summer days)
+## Summer days (like the summer days)</code></pre>
+<p>This shows us the four lines that the word “summer” was found on. Let’s see what happens when we look for a word that isn’t there:</p>
+<pre class="bash"><code>grep &quot;winter&quot; data/practice_data/summer_days.txt</code></pre>
+<p>Nothing pops up, as expected.</p>
+<p><code>grep</code> has a ton of flags that we can pass at the command line, only a few of which we’ll cover today. For example, we can pass the <code>-v</code> flag to <strong>invert</strong> the match, returning every line on which the match wasn’t found. So, to find all the lines on which “summer” <strong>doesn’t</strong> appear, we would do:</p>
+<pre class="bash"><code>grep -v &quot;summer&quot; data/practice_data/summer_days.txt</code></pre>
+<pre><code>## Summer Days - Sebastian Yatra
+## I don&#39;t wanna let you go
+## I don&#39;t wanna let you go
+## Why you wanna break my heart?
+## Try to be honest
+## We can make it on our own
+## We can make it on our own
+## You just gotta give me time
+## Just stay here through August
+## 
+## Please, believe in me
+## Like your wildest dreams
+## Like your wildest dreams
+## Forever free
+## Sail away with me
+## Don&#39;t leave
+## 
+## Dance on the ocean
+## They be playing our song
+## Hold on to meet one more time
+## Dance on the ocean
+## Don&#39;t kiss me goodbye
+## Don&#39;t know what you think you will find
+## 
+## Summer days
+## Summer days
+## 
+## Yatra, yatra
+## Fue culpa del destino y te quedaste sola
+## Te puso en mi camino y nos liego la hora
+## Contigo a media noche quiero estar a solas
+## Lo que tu quieras te haré
+## Mi corazón se estalla tocandote en la playa
+## Sintiendo que la arena se convierta en amor
+## Y un beso es tan profundo
+## Que para los segundos
+## Sintiendo que el verano se convierta en amor
+## 
+## Dance on the ocean
+## They be playing our song
+## Hold on to meet one more time
+## Dance on the ocean
+## Don&#39;t kiss me goodbye
+## Don&#39;t know what you think you will find
+## 
+## Summer days
+## Summer days
+## 
+## Dance on the ocean
+## They be playing our song
+## Hold on to meet one more time
+## Dance on the ocean
+## Don&#39;t kiss me goodbye
+## Don&#39;t know what you think you will find
+## 
+## 
+## Summer days</code></pre>
 <div id="exercise-1.1" class="section level3">
 <h3>Exercise 1.1</h3>
 <ul>
-<li>How can you tell when a number is divisible by 3?</li>
-<li>How can you tell when a number is divisible by 10?</li>
-<li>How can you tell when a number is odd?</li>
+<li>With our last command, we searched for the all the lines in which the term “summer” doesn’t appear - does the output look correct? Search the <code>man</code> page (via <code>man grep</code>) and look for the flag to make the <code>grep</code> search case-insensitive.</li>
+<li>Use the <code>|</code> operator to pipe the output from the above search to <code>wc</code>. How many lines was summer found on? Is there a smarter way to do this? Hint: check the <code>man</code> page.</li>
+<li>Find the flag to output the line number with the matches.</li>
 </ul>
+<p>By default, <code>grep</code> only outputs the lines on which the match was found. This can lead to situations where using the <code>-c</code> flag to count occurrences of a term is inaccurate. For example, let’s find all the lines on which the word “sunday” appears in <code>sunday.txt</code>:</p>
+<pre class="bash"><code>grep -i sunday data/practice_data/sunday.txt</code></pre>
+<pre><code>## Sunday (feat. Heize, Jay Park) - GroovyRoom 
+## Sunday, Sunday
+## Sunday, Sunday
+## Sunday, Sunday
+## Sunday, the day I look forward to the most
+## Sunday, Sunday
+## Sunday, Sunday
+## Sunday, Sunday
+## My Monday to Sunday
+## Sunday, Sunday
+## Sunday, Sunday
+## Sunday, Sunday</code></pre>
+<p>Now, let’s see what <code>-c</code> says:</p>
+<pre class="bash"><code>grep -ic sunday data/practice_data/sunday.txt</code></pre>
+<pre><code>## 12</code></pre>
+<p>We can correct this by using the <code>-o</code> flag, which tells <code>grep</code> to output each occurrence of the search term on a separate line:</p>
+<pre class="bash"><code>grep -io sunday data/practice_data/sunday.txt</code></pre>
+<pre><code>## Sunday
+## Sunday
+## Sunday
+## Sunday
+## Sunday
+## Sunday
+## Sunday
+## Sunday
+## Sunday
+## Sunday
+## Sunday
+## Sunday
+## Sunday
+## Sunday
+## Sunday
+## Sunday
+## Sunday
+## Sunday
+## Sunday
+## Sunday
+## Sunday</code></pre>
+<p>From here, we can pipe to <code>wc</code> to get the number of occurrences:</p>
+<pre class="bash"><code>grep -io sunday data/practice_data/sunday.txt | wc -l</code></pre>
+<pre><code>##       21</code></pre>
 </div>
-</div>
-<div id="using-functions" class="section level2">
-<h2>Using functions</h2>
-<p>Every programming language has functions. In R, they look something like:</p>
-<pre class="r"><code>function_name(arg_1 = ..., arg_2 =..., ...)</code></pre>
-<p>For example, the <code>seq</code> function takse a starting number, an ending number, and an interval, and returns a sequence of numbers based on those inputs. For example, to count to 100 by 5:</p>
-<pre class="r"><code>seq(0, 100, 5)</code></pre>
-<pre><code>##  [1]   0   5  10  15  20  25  30  35  40  45  50  55  60  65  70  75  80
-## [18]  85  90  95 100</code></pre>
-<p>And just like before, we can assign this to a variable and do other stuff with it. For example, we can add a scalar to each component:</p>
-<pre class="r"><code>y &lt;- seq(0, 100, 5)
-y + 2</code></pre>
-<pre><code>##  [1]   2   7  12  17  22  27  32  37  42  47  52  57  62  67  72  77  82
-## [18]  87  92  97 102</code></pre>
-<p>We can multiply the sequence by a scalar:</p>
-<pre class="r"><code>y * 4</code></pre>
-<pre><code>##  [1]   0  20  40  60  80 100 120 140 160 180 200 220 240 260 280 300 320
-## [18] 340 360 380 400</code></pre>
-<p>Another function is the <code>length</code> function. We can use it to check the number of objects contained in an object:</p>
-<pre class="r"><code>length(y)</code></pre>
-<pre><code>## [1] 21</code></pre>
-<p>We can do component-wise addition of two scalars:</p>
-<pre class="r"><code>z &lt;- seq(1, 20)
-y + z</code></pre>
-<pre><code>## Warning in y + z: longer object length is not a multiple of shorter object
-## length</code></pre>
-<pre><code>##  [1]   1   7  13  19  25  31  37  43  49  55  61  67  73  79  85  91  97
-## [18] 103 109 115 101</code></pre>
 <div id="exercise-1.2" class="section level3">
 <h3>Exercise 1.2</h3>
 <ul>
-<li>What was the warning we received when we added <code>y</code> and <code>z</code> together? How did R handle it?</li>
-<li>When we made the list of numbers <code>y</code>, we provided a third number to indicate the interval to count by. When we made <code>z</code>, we left that out.</li>
+<li>How many lines does the word “Monday” appear on in <code>monday.txt</code>? How many occurrences of “Monday” are there?</li>
 </ul>
 </div>
 </div>
-<div id="accessing-elements" class="section level2">
-<h2>Accessing elements</h2>
-<p>We can access elements of the sequence we created earlier by using bracket notation. For example, to access the second element of <code>y</code>, we can do:</p>
-<pre class="r"><code>y[2]</code></pre>
-<pre><code>## [1] 5</code></pre>
-<p>To access the first 5 elements, we can do:</p>
-<pre class="r"><code>y[1:5]</code></pre>
-<pre><code>## [1]  0  5 10 15 20</code></pre>
-</div>
-<div id="working-with-data" class="section level2">
-<h2>Working with data</h2>
-<p>Most of the time you’re working with R, you’ll be manipulating some data that was given to you, like expression data, an OTU abundance table, or yield data. The most common form of data is some sort of rectangular container, such as a data frame, a table, a tibble, a matrix, etc. While there are some differences between all of them, they all function similarly. Note that we’re going to begin our investigation using Base R functionality before we move on to using <code>tidyverse</code> (specifically, <code>dplyr</code>) functions.</p>
-<p>We’re going to begin learning how to manipulate data by using <code>mtcars</code>, a dataset that comes packaged with R.</p>
-<p>Let’s learn more about the <code>mtcars</code> dataset:</p>
-<pre class="r"><code>?mtcars</code></pre>
-<p>So there’s information about a few different cars here. Let’s take a look at the data:</p>
-<pre class="r"><code>mtcars</code></pre>
-<pre><code>##                      mpg cyl  disp  hp drat    wt  qsec vs am gear carb
-## Mazda RX4           21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4
-## Mazda RX4 Wag       21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4
-## Datsun 710          22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
-## Hornet 4 Drive      21.4   6 258.0 110 3.08 3.215 19.44  1  0    3    1
-## Hornet Sportabout   18.7   8 360.0 175 3.15 3.440 17.02  0  0    3    2
-## Valiant             18.1   6 225.0 105 2.76 3.460 20.22  1  0    3    1
-## Duster 360          14.3   8 360.0 245 3.21 3.570 15.84  0  0    3    4
-## Merc 240D           24.4   4 146.7  62 3.69 3.190 20.00  1  0    4    2
-## Merc 230            22.8   4 140.8  95 3.92 3.150 22.90  1  0    4    2
-## Merc 280            19.2   6 167.6 123 3.92 3.440 18.30  1  0    4    4
-## Merc 280C           17.8   6 167.6 123 3.92 3.440 18.90  1  0    4    4
-## Merc 450SE          16.4   8 275.8 180 3.07 4.070 17.40  0  0    3    3
-## Merc 450SL          17.3   8 275.8 180 3.07 3.730 17.60  0  0    3    3
-## Merc 450SLC         15.2   8 275.8 180 3.07 3.780 18.00  0  0    3    3
-## Cadillac Fleetwood  10.4   8 472.0 205 2.93 5.250 17.98  0  0    3    4
-## Lincoln Continental 10.4   8 460.0 215 3.00 5.424 17.82  0  0    3    4
-## Chrysler Imperial   14.7   8 440.0 230 3.23 5.345 17.42  0  0    3    4
-## Fiat 128            32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1
-## Honda Civic         30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
-## Toyota Corolla      33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1
-## Toyota Corona       21.5   4 120.1  97 3.70 2.465 20.01  1  0    3    1
-## Dodge Challenger    15.5   8 318.0 150 2.76 3.520 16.87  0  0    3    2
-## AMC Javelin         15.2   8 304.0 150 3.15 3.435 17.30  0  0    3    2
-## Camaro Z28          13.3   8 350.0 245 3.73 3.840 15.41  0  0    3    4
-## Pontiac Firebird    19.2   8 400.0 175 3.08 3.845 17.05  0  0    3    2
-## Fiat X1-9           27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1
-## Porsche 914-2       26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2
-## Lotus Europa        30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2
-## Ford Pantera L      15.8   8 351.0 264 4.22 3.170 14.50  0  1    5    4
-## Ferrari Dino        19.7   6 145.0 175 3.62 2.770 15.50  0  1    5    6
-## Maserati Bora       15.0   8 301.0 335 3.54 3.570 14.60  0  1    5    8
-## Volvo 142E          21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2</code></pre>
-<p>Most times, datasets are too large to be printed out to the whole screen at once and we just want to get a look at some of the data to get a feel for it. We can use <code>head</code> or <code>tail</code> to look at the first or last few rows of a dataset, respectively:</p>
-<pre class="r"><code>head(mtcars)</code></pre>
-<pre><code>##                    mpg cyl disp  hp drat    wt  qsec vs am gear carb
-## Mazda RX4         21.0   6  160 110 3.90 2.620 16.46  0  1    4    4
-## Mazda RX4 Wag     21.0   6  160 110 3.90 2.875 17.02  0  1    4    4
-## Datsun 710        22.8   4  108  93 3.85 2.320 18.61  1  1    4    1
-## Hornet 4 Drive    21.4   6  258 110 3.08 3.215 19.44  1  0    3    1
-## Hornet Sportabout 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2
-## Valiant           18.1   6  225 105 2.76 3.460 20.22  1  0    3    1</code></pre>
-<pre class="r"><code>tail(mtcars)</code></pre>
-<pre><code>##                 mpg cyl  disp  hp drat    wt qsec vs am gear carb
-## Porsche 914-2  26.0   4 120.3  91 4.43 2.140 16.7  0  1    5    2
-## Lotus Europa   30.4   4  95.1 113 3.77 1.513 16.9  1  1    5    2
-## Ford Pantera L 15.8   8 351.0 264 4.22 3.170 14.5  0  1    5    4
-## Ferrari Dino   19.7   6 145.0 175 3.62 2.770 15.5  0  1    5    6
-## Maserati Bora  15.0   8 301.0 335 3.54 3.570 14.6  0  1    5    8
-## Volvo 142E     21.4   4 121.0 109 4.11 2.780 18.6  1  1    4    2</code></pre>
-<p>We can check how many rows and columns there are by doing nrows and nols:</p>
-<pre class="r"><code>nrow(mtcars)</code></pre>
-<pre><code>## [1] 32</code></pre>
-<pre class="r"><code>ncol(mtcars)</code></pre>
-<pre><code>## [1] 11</code></pre>
-<p>Alternatively, we can use <code>dim</code>, which returns the number of rows and columns as a pair of numbers:</p>
-<pre class="r"><code>dim(mtcars)</code></pre>
-<pre><code>## [1] 32 11</code></pre>
-<p>We can use notation similar to what we used earlier to access particular elements of the data frame. For instance, if I wanted the value in the 5th column of the first row, I could access it like this:</p>
-<pre class="r"><code>mtcars[1, 5]</code></pre>
-<pre><code>## [1] 3.9</code></pre>
-<p>To access the first fives values in the first row, you can do this:</p>
-<pre class="r"><code>mtcars[1, 1:5]</code></pre>
-<pre><code>##           mpg cyl disp  hp drat
-## Mazda RX4  21   6  160 110  3.9</code></pre>
-<p>And to get the whole row, you can leave the second argument empty:</p>
-<pre class="r"><code>mtcars[1, ]</code></pre>
-<pre><code>##           mpg cyl disp  hp drat   wt  qsec vs am gear carb
-## Mazda RX4  21   6  160 110  3.9 2.62 16.46  0  1    4    4</code></pre>
-<p>Alternatively, you can access columns by their name by putting the name in quotes:</p>
-<pre class="r"><code>mtcars[1, &#39;cyl&#39;]</code></pre>
-<pre><code>## [1] 6</code></pre>
-<p>To access multiple column names in this way, you need to <em>combine</em> (or <em>concatenate</em>) them together with the <code>c</code> function:</p>
-<pre class="r"><code>mtcars[1, c(&#39;mpg&#39;, &#39;cyl&#39;, &#39;disp&#39;)]</code></pre>
-<pre><code>##           mpg cyl disp
-## Mazda RX4  21   6  160</code></pre>
-<p>You can do the same kind of syntax to access the rows of the data frame:</p>
-<pre class="r"><code>mtcars[1:5, 1:5]</code></pre>
-<pre><code>##                    mpg cyl disp  hp drat
-## Mazda RX4         21.0   6  160 110 3.90
-## Mazda RX4 Wag     21.0   6  160 110 3.90
-## Datsun 710        22.8   4  108  93 3.85
-## Hornet 4 Drive    21.4   6  258 110 3.08
-## Hornet Sportabout 18.7   8  360 175 3.15</code></pre>
-<pre class="r"><code>mtcars[&quot;Toyota Corolla&quot;, 1:5]</code></pre>
-<pre><code>##                 mpg cyl disp hp drat
-## Toyota Corolla 33.9   4 71.1 65 4.22</code></pre>
+<div id="working-with-fasta-files" class="section level2">
+<h2>Working with <code>fasta</code> files</h2>
+<p>Now that we have a bit of practice with <code>grep</code>, let’s return to the problem at hand. The <code>data/sequence_info</code> directory has the nucleotide and protein sequences for our genes of interest. Let’s take a look at them:</p>
+<pre class="bash"><code>head data/sequence_info/amoa_prot.fa</code></pre>
+<pre><code>## &gt;BAA92239  coded_by=987..1817,organism=Nitrosomonas sp. TK794,definition=ammonia monooxygenase a
+## msifrteeilkaakmppeavhmsrlidavyfpilvvllvgtyhmhfmllagdwdfwmdwkdrqwwpvvtpivgitycsaimyylwvnyrqpfgatlcvvclligewltrywgfywwshyplnfvtpgimlpgalmldftlyltrnwlvtalvgggffglmfxpgnwpifgpthlpivvegtllsmadymghlyvrtgtpeyvrhieqgslrtfgghttviaaffaafvsmlmfavwwylgkvyctaffyvkgkrgrivqrndvtafgeegfpegik
+## &gt;BAB84331  coded_by=1073..1861,organism=Nitrosomonas sp. ENI-11,definition=ammonia monooxygenase subunit A2
+## mppeavhmsrlidavyfpilivllvgtyhmhfmllagdwdfwmdwkdrqwwpvvtpivgitycsaimyylwvnyrqpfgatlcvvclligewltrywgfywwshypinfvtpgimlpgalmldftmyltrnwlvtalvgggffgvlfypgnwpifgpthlpivvegtllsmadymghmyvrtgtpeyvrhieqgslrtfgghttviaaffsafvsmlmftvwwylgkvyctaffyvkgkrgrivhrndvtafgeegfpegik
+## &gt;BAB84328  coded_by=1073..1861,organism=Nitrosomonas sp. ENI-11,definition=ammonia monooxygenase subunit A-1
+## mppeavhmsrlidavyfpilivllvgtyhmhfmllagdwdfwmdwkdrqwwpvvtpivgitycsaimyylwvnyrqpfgatlcvvclligewltrywgfywwshypinfvtpgimlpgalmldftmyltrnwlvtalvgggffgvlfypgnwpifgpthlpivvegtllsmadymghmyvrtgtpeyvrhieqgslrtfgghttviaaffsafvsmlmftvwwylgkvyctaffyvkgkrgrivhrndvtafgeegfpegik
+## &gt;SET51056  coded_by=1286..2116,organism=Nitrosomonas europaea,definition=ammonia monooxygenase subunit A
+## msifrteeilkaakmppeavhmsrlidavyfpiliillvgtyhmhfmllagdwdfwmdwkdrqwwpvvtpivgitycsaimyylwvnyrqpfgatlcvvclligewltrywgfywwshypinfvtpgimlpgalmldftlyltrnwlvtalvgggffgllfypgnwpifgpthlpivvegtllsmadymghlyvrtgtpeyvrhieqgslrtfgghttviaaffsafvsmlmftvwwylgkvyctaffyvkgkrgrivhrndvtafgeegfpegik
+## &gt;SDW98167  coded_by=1286..2116,organism=Nitrosomonas europaea,definition=ammonia monooxygenase subunit A
+## msifrteeilkaakmppeavhmsrlidavyfpiliillvgtyhmhfmllagdwdfwmdwkdrqwwpvvtpivgitycsaimyylwvnyrqpfgatlcvvclligewltrywgfywwshypinfvtpgimlpgalmldftlyltrnwlvtalvgggffgllfypgnwpifgpthlpivvegtllsmadymghlyvrtgtpeyvrhieqgslrtfgghttviaaffsafvsmlmftvwwylgkvyctaffyvkgkrgrivhrndvtafgeegfpegik</code></pre>
+<pre class="bash"><code>head data/sequence_info/amoa_nuc.fa</code></pre>
+<pre><code>## &gt;AB031869  location=987..1817,organism=Nitrosomonas sp. TK794,definition=ammonia monooxygenase a
+## gtgagtatatttagaacagaagagatcctgaaagcggccaagatgccgccggaagcggtccatatgtcacgcctgattgatgcggtttattttccgattctggttgttctgttggtaggtacctaccatatgcacttcatgttgttggcaggtgactgggatttctggatggactggaaagatcgtcaatggtggcctgtagtaacacctattgtaggcattacctattgctcggcaattatgtattacctgtgggtcaactaccgtcaaccatttggtgcgactctgtgcgtagtgtgtttgctgataggtgagtggctgacacgttactggggtttctactggtggtcacactatccactcaattttgtaaccccaggtatcatgctcccgggtgcattgatgttggatttcacgctgtatctgacacgtaactggttggtgactgcattggttgggggtggattctttggcctgatgtttnnnccaggtaactggccaatctttggcccgacccatctgccaatcgttgtagaaggaacactgttgtcgatggctgactacatgggtcacctgtatgttcgtacgggtacacctgagtatgttcgtcatattgaacaaggttcattacgtacctttggtggtcacaccacagttattgcggcattcttcgctgcgtttgtatccatgctgatgtttgcagtctggtggtatcttggaaaagtttactgcacagccttcttctacgttaaaggtaaaagaggacgtattgtacagcgcaatgatgttacggcatttggtgaagaagggtttccagaggggatcaaa
+## &gt;AB079055  location=1073..1861,organism=Nitrosomonas sp. ENI-11,definition=ammonia monooxygenase subunit A2
+## atgccaccggaagcggttcatatgtcacgtctgattgacgcggtttattttccaattctgattgttttgctggtaggtacctaccatatgcacttcatgctgctggcaggtgactgggatttctggatggactggaaagatcgtcaatggtggccggttgtgacaccgatcgtaggaattacctactgctcggcaatcatgtattacctgtgggtcaactaccgccaaccgtttggtgcaacactgtgtgtagtgtgtctgttgattggtgaatggctgacacgttactggggattctactggtggtcacactatcctatcaatttcgtaacaccgggtattatgcttccaggtgcgctgatgctggatttcacaatgtatctgacacgcaactggctggtgacggctctggttgggggtggattcttcggtgtgctgttctatccgggtaactggccgatctttggtccgacacatctgccaatcgtcgtagaaggaacactgttgtcgatggctgactacatgggccatatgtatgttcgtacgggtacacctgagtatgttcgtcatattgagcaaggttcactgcgtacctttggtggacataccacagttattgcagcgttcttctctgcattcgtatcaatgttgatgttcacagtatggtggtatcttggaaaagtttactgtacagcctttttctacgttaaaggtaaaagaggtcgtatcgtacatcgcaatgatgttaccgcattcggtgaagaaggctttccagaggggatcaaa
+## &gt;AB079054  location=1073..1861,organism=Nitrosomonas sp. ENI-11,definition=ammonia monooxygenase subunit A-1
+## atgccaccggaagcggttcatatgtcacgtctgattgacgcggtttattttccaattctgattgttttgctggtaggtacctaccatatgcacttcatgctgctggcaggtgactgggatttctggatggactggaaagatcgtcaatggtggccggttgtgacaccgatcgtaggaattacctactgctcggcaatcatgtattacctgtgggtcaactaccgccaaccgtttggtgcaacactgtgtgtagtgtgtctgttgattggtgaatggctgacacgttactggggattctactggtggtcacactatcctatcaatttcgtaacaccgggtattatgcttccaggtgcgctgatgctggatttcacaatgtatctgacacgcaactggctggtgacggctctggttgggggtggattcttcggtgtgctgttctatccgggtaactggccgatctttggtccgacacatctgccaatcgtcgtagaaggaacactgttgtcgatggctgactacatgggccatatgtatgttcgtacgggtacacctgagtatgttcgtcatattgagcaaggttcactgcgtacctttggtggacataccacagttattgcagcgttcttctctgcattcgtatcaatgttgatgttcacagtatggtggtatcttggaaaagtttactgtacagcctttttctacgttaaaggtaaaagaggtcgtatcgtacatcgcaatgatgttaccgcattcggtgaagaaggctttccagaggggatcaaa
+## &gt;FOID01000069  location=1286..2116,organism=Nitrosomonas europaea,definition=ammonia monooxygenase subunit A
+## gtgagtatatttagaacggaagaaatcctgaaagcggccaagatgccgccggaagcggttcatatgtcacgtctgattgatgcagtttattttccaattctgattattttgctggtgggtacctaccacatgcactttatgctgctggcaggtgactgggatttctggatggactggaaagatcgtcaatggtggccggttgtaacgccaatcgtggggatcacctactgttcggcaatcatgtattacttgtgggtcaactaccgccaaccgtttggtgcaacgttgtgtgtggtgtgtctgctgattggtgagtggctgacacgttactggggattctactggtggtcacactaccccatcaacttcgtaacaccgggcattatgcttccgggtgcgctgatgctggacttcacgctgtatctgacacgcaactggctggtgacggctctggttggaggtggattcttcggtctgctgttctatccgggtaactggccgatttttggaccaacccatttgccaatcgttgtagaaggcacattgctgtcgatggctgattacatgggacatctgtatgttcgtacaggtacacccgagtatgttcgtcatattgagcaaggttcactgcgtacctttggtggtcataccacagttattgcagcattcttctctgcgttcgtatcaatgttgatgttcaccgtatggtggtatcttggaaaagtttactgtacagcctttttctacgttaaaggtaaaagaggtcgtatcgtacatcgcaatgatgttaccgcattcggtgaagaaggctttccagaggggatcaaa
+## &gt;FNNX01000068  location=1286..2116,organism=Nitrosomonas europaea,definition=ammonia monooxygenase subunit A
+## gtgagtatatttagaacggaagaaatcctgaaagcggccaagatgccgccggaagcggttcatatgtcacgtctgattgatgcagtttattttccaattctgattattttgctggtgggtacctaccacatgcactttatgctgctggcaggtgactgggatttctggatggactggaaagatcgtcaatggtggccggttgtaacgccaatcgtggggatcacctactgttcggcaatcatgtattacttgtgggtcaactaccgccaaccgtttggtgcaacgttgtgtgtggtgtgtctgctgattggtgagtggctgacacgttactggggattctactggtggtcacactaccccatcaacttcgtaacaccgggcattatgcttccgggtgcgctgatgctggacttcacgctgtatctgacacgcaactggctggtgacggctctggttggaggtggattcttcggtctgctgttctatccgggtaactggccgatttttggaccaacccatttgccaatcgttgtagaaggcacattgctgtcgatggctgattacatgggacatctgtatgttcgtacaggtacacccgagtatgttcgtcatattgagcaaggttcactgcgtacctttggtggtcataccacagttattgcagcattcttctctgcgttcgtatcaatgttgatgttcaccgtatggtggtatcttggaaaagtttactgtacagcctttttctacgttaaaggtaaaagaggtcgtatcgtacatcgcaatgatgttaccgcattcggtgaagaaggctttccagaggggatcaaa</code></pre>
+<pre class="bash"><code>pwd</code></pre>
+<pre><code>## /Users/pvillanueva13/Documents/repos/p3.bootcamp.da1.2019</code></pre>
 <div id="exercise-1.3" class="section level3">
 <h3>Exercise 1.3</h3>
 <ul>
-<li>Use <code>rownames</code> to find out all the different cars that are in the dataset. Print out the rows of these cars.</li>
-<li>Print out the number of cylinders, quarter-mile time, number of carburetors, and whether or not the engine is v-shaped for the cars you chose above. See the documentation for <code>?mtcars</code> to figure out which columns have that information.</li>
+<li>The <code>amoa_nuc.fa</code> and <code>amoa_prot.fa</code> files represent nucleotide and protein sequences of the same gene. What are some sanity checks you can do to make sure these files pass a sanity check?</li>
+<li>What do you know about <code>fasta</code> files that you can use to count the number of sequences in a file?</li>
+<li>Remember that our goal is to collect the number of clusters found at each of the different similarity thresholds. This information is in the various <code>.fa.clstr</code> files. How are those files structured? How would you count the number of clusters in a single file? How can you expand this command to do this over all the files?</li>
 </ul>
 </div>
 </div>
-<div id="subsetting-data-based-on-conditions" class="section level2">
-<h2>Subsetting data based on conditions</h2>
-<p>Let’s say we’re interested in cars with 4 cylinders. The following statement returns a vector of <code>TRUE</code> and <code>FALSE</code> indicating the rows in which the statement <code>cylinders equals 4</code> is true.</p>
-<pre class="r"><code>mtcars$cyl == 4</code></pre>
-<pre><code>##  [1] FALSE FALSE  TRUE FALSE FALSE FALSE FALSE  TRUE  TRUE FALSE FALSE
-## [12] FALSE FALSE FALSE FALSE FALSE FALSE  TRUE  TRUE  TRUE  TRUE FALSE
-## [23] FALSE FALSE FALSE  TRUE  TRUE  TRUE FALSE FALSE FALSE  TRUE</code></pre>
-<p>We can then use this vector to subset <code>mtcars</code> so that it shows only the cars with 4 cylinders:</p>
-<pre class="r"><code>mtcars[mtcars$cyl == 4, ]</code></pre>
-<pre><code>##                 mpg cyl  disp  hp drat    wt  qsec vs am gear carb
-## Datsun 710     22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
-## Merc 240D      24.4   4 146.7  62 3.69 3.190 20.00  1  0    4    2
-## Merc 230       22.8   4 140.8  95 3.92 3.150 22.90  1  0    4    2
-## Fiat 128       32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1
-## Honda Civic    30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
-## Toyota Corolla 33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1
-## Toyota Corona  21.5   4 120.1  97 3.70 2.465 20.01  1  0    3    1
-## Fiat X1-9      27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1
-## Porsche 914-2  26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2
-## Lotus Europa   30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2
-## Volvo 142E     21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2</code></pre>
-<p>Similarly, we can use this to look at cars that have more than 4 cylinders:</p>
-<pre class="r"><code>mtcars[mtcars$cyl &gt; 4, ]</code></pre>
-<pre><code>##                      mpg cyl  disp  hp drat    wt  qsec vs am gear carb
-## Mazda RX4           21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4
-## Mazda RX4 Wag       21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4
-## Hornet 4 Drive      21.4   6 258.0 110 3.08 3.215 19.44  1  0    3    1
-## Hornet Sportabout   18.7   8 360.0 175 3.15 3.440 17.02  0  0    3    2
-## Valiant             18.1   6 225.0 105 2.76 3.460 20.22  1  0    3    1
-## Duster 360          14.3   8 360.0 245 3.21 3.570 15.84  0  0    3    4
-## Merc 280            19.2   6 167.6 123 3.92 3.440 18.30  1  0    4    4
-## Merc 280C           17.8   6 167.6 123 3.92 3.440 18.90  1  0    4    4
-## Merc 450SE          16.4   8 275.8 180 3.07 4.070 17.40  0  0    3    3
-## Merc 450SL          17.3   8 275.8 180 3.07 3.730 17.60  0  0    3    3
-## Merc 450SLC         15.2   8 275.8 180 3.07 3.780 18.00  0  0    3    3
-## Cadillac Fleetwood  10.4   8 472.0 205 2.93 5.250 17.98  0  0    3    4
-## Lincoln Continental 10.4   8 460.0 215 3.00 5.424 17.82  0  0    3    4
-## Chrysler Imperial   14.7   8 440.0 230 3.23 5.345 17.42  0  0    3    4
-## Dodge Challenger    15.5   8 318.0 150 2.76 3.520 16.87  0  0    3    2
-## AMC Javelin         15.2   8 304.0 150 3.15 3.435 17.30  0  0    3    2
-## Camaro Z28          13.3   8 350.0 245 3.73 3.840 15.41  0  0    3    4
-## Pontiac Firebird    19.2   8 400.0 175 3.08 3.845 17.05  0  0    3    2
-## Ford Pantera L      15.8   8 351.0 264 4.22 3.170 14.50  0  1    5    4
-## Ferrari Dino        19.7   6 145.0 175 3.62 2.770 15.50  0  1    5    6
-## Maserati Bora       15.0   8 301.0 335 3.54 3.570 14.60  0  1    5    8</code></pre>
-<p>We can use <code>|</code>, the boolean <code>or</code> operator, to look at cars that are 4 or 6 cylinders:</p>
-<pre class="r"><code>mtcars[mtcars$cyl == 4 | mtcars$cyl == 6, ]</code></pre>
-<pre><code>##                 mpg cyl  disp  hp drat    wt  qsec vs am gear carb
-## Mazda RX4      21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4
-## Mazda RX4 Wag  21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4
-## Datsun 710     22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
-## Hornet 4 Drive 21.4   6 258.0 110 3.08 3.215 19.44  1  0    3    1
-## Valiant        18.1   6 225.0 105 2.76 3.460 20.22  1  0    3    1
-## Merc 240D      24.4   4 146.7  62 3.69 3.190 20.00  1  0    4    2
-## Merc 230       22.8   4 140.8  95 3.92 3.150 22.90  1  0    4    2
-## Merc 280       19.2   6 167.6 123 3.92 3.440 18.30  1  0    4    4
-## Merc 280C      17.8   6 167.6 123 3.92 3.440 18.90  1  0    4    4
-## Fiat 128       32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1
-## Honda Civic    30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
-## Toyota Corolla 33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1
-## Toyota Corona  21.5   4 120.1  97 3.70 2.465 20.01  1  0    3    1
-## Fiat X1-9      27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1
-## Porsche 914-2  26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2
-## Lotus Europa   30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2
-## Ferrari Dino   19.7   6 145.0 175 3.62 2.770 15.50  0  1    5    6
-## Volvo 142E     21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2</code></pre>
-<p>And we can combine it with our indexing from earlier to look at the number of cylinders and quarter-mile speed for each of these cars:</p>
-<pre class="r"><code>mtcars[mtcars$cyl == 4 | mtcars$cyl == 6, c(&quot;cyl&quot;, &quot;qsec&quot;)]</code></pre>
-<pre><code>##                cyl  qsec
-## Mazda RX4        6 16.46
-## Mazda RX4 Wag    6 17.02
-## Datsun 710       4 18.61
-## Hornet 4 Drive   6 19.44
-## Valiant          6 20.22
-## Merc 240D        4 20.00
-## Merc 230         4 22.90
-## Merc 280         6 18.30
-## Merc 280C        6 18.90
-## Fiat 128         4 19.47
-## Honda Civic      4 18.52
-## Toyota Corolla   4 19.90
-## Toyota Corona    4 20.01
-## Fiat X1-9        4 18.90
-## Porsche 914-2    4 16.70
-## Lotus Europa     4 16.90
-## Ferrari Dino     6 15.50
-## Volvo 142E       4 18.60</code></pre>
-<div id="exercise-1.4" class="section level3">
-<h3>Exercise 1.4</h3>
-<ul>
-<li>Use the <code>&amp;</code>, the boolean <code>and</code> operator, to subset <code>mtcars</code> by those cars with 6 cylinders and less than 35 miles per gallon.</li>
-</ul>
-</div>
-</div>
-<div id="getting-started-with-the-tidyverse" class="section level2">
-<h2>Getting started with the tidyverse</h2>
-<p>Everything we did up to now was done using base R and was useful in helping you get a grasp of how data frames work. However, we’re now going to start using the tidyverse suite of functions from here out. If you do some searching online, you’ll find some people with strong opinions about whether or not to use the Tidyverse functions. There are arguments on both sides. For example, On the one hand, Tidyverse functions make certain things a lot easier, like quickly prototyping and editing data analysis pipelines, and it is often easier to read Tidyverse code than base R code. On the other hand, code written using Tidyverse functions are not 100% portable, because your collaborator may not have installed the packages required. We’ll be using the Tidyverse functions when we can, but we will use Base R functionality as required.</p>
-<p>Let’s revisit what we did earlier in the subsetting section. We’ll start by importing the tidyverse functions:</p>
-<pre class="r"><code>library(tidyverse)</code></pre>
-<pre><code>## ── Attaching packages ────────────────────────────────────────────────────────────────────────────────────────── tidyverse 1.2.1 ──</code></pre>
-<pre><code>## ✔ ggplot2 3.2.0     ✔ purrr   0.3.2
-## ✔ tibble  2.1.3     ✔ dplyr   0.8.3
-## ✔ tidyr   0.8.3     ✔ stringr 1.4.0
-## ✔ readr   1.3.1     ✔ forcats 0.4.0</code></pre>
-<pre><code>## Warning: package &#39;ggplot2&#39; was built under R version 3.5.2</code></pre>
-<pre><code>## Warning: package &#39;tibble&#39; was built under R version 3.5.2</code></pre>
-<pre><code>## Warning: package &#39;tidyr&#39; was built under R version 3.5.2</code></pre>
-<pre><code>## Warning: package &#39;purrr&#39; was built under R version 3.5.2</code></pre>
-<pre><code>## Warning: package &#39;dplyr&#39; was built under R version 3.5.2</code></pre>
-<pre><code>## Warning: package &#39;stringr&#39; was built under R version 3.5.2</code></pre>
-<pre><code>## Warning: package &#39;forcats&#39; was built under R version 3.5.2</code></pre>
-<pre><code>## ── Conflicts ───────────────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
-## ✖ dplyr::filter() masks stats::filter()
-## ✖ dplyr::lag()    masks stats::lag()</code></pre>
-<p>The first function we will learn about is <code>select</code>. We can use the <code>select</code> function to select variables in a dataframe. For example, to select the number of cylinders and miles per gallon, we can do:</p>
-<pre class="r"><code>select(mtcars, &#39;cyl&#39;, &#39;mpg&#39;)</code></pre>
-<pre><code>##                     cyl  mpg
-## Mazda RX4             6 21.0
-## Mazda RX4 Wag         6 21.0
-## Datsun 710            4 22.8
-## Hornet 4 Drive        6 21.4
-## Hornet Sportabout     8 18.7
-## Valiant               6 18.1
-## Duster 360            8 14.3
-## Merc 240D             4 24.4
-## Merc 230              4 22.8
-## Merc 280              6 19.2
-## Merc 280C             6 17.8
-## Merc 450SE            8 16.4
-## Merc 450SL            8 17.3
-## Merc 450SLC           8 15.2
-## Cadillac Fleetwood    8 10.4
-## Lincoln Continental   8 10.4
-## Chrysler Imperial     8 14.7
-## Fiat 128              4 32.4
-## Honda Civic           4 30.4
-## Toyota Corolla        4 33.9
-## Toyota Corona         4 21.5
-## Dodge Challenger      8 15.5
-## AMC Javelin           8 15.2
-## Camaro Z28            8 13.3
-## Pontiac Firebird      8 19.2
-## Fiat X1-9             4 27.3
-## Porsche 914-2         4 26.0
-## Lotus Europa          4 30.4
-## Ford Pantera L        8 15.8
-## Ferrari Dino          6 19.7
-## Maserati Bora         8 15.0
-## Volvo 142E            4 21.4</code></pre>
-<p>We can also use <code>select</code> to <em>deselect</em> certain variables; when used in this way, <code>select</code> will return all the columns except for the variables indicated. For example, if we aren’t interested in miles per gallon, number of cylinders, or displacement, we can do:</p>
-<pre class="r"><code>select(mtcars, -&quot;mpg&quot;, -&quot;cyl&quot;, -&quot;disp&quot;)</code></pre>
-<pre><code>##                      hp drat    wt  qsec vs am gear carb
-## Mazda RX4           110 3.90 2.620 16.46  0  1    4    4
-## Mazda RX4 Wag       110 3.90 2.875 17.02  0  1    4    4
-## Datsun 710           93 3.85 2.320 18.61  1  1    4    1
-## Hornet 4 Drive      110 3.08 3.215 19.44  1  0    3    1
-## Hornet Sportabout   175 3.15 3.440 17.02  0  0    3    2
-## Valiant             105 2.76 3.460 20.22  1  0    3    1
-## Duster 360          245 3.21 3.570 15.84  0  0    3    4
-## Merc 240D            62 3.69 3.190 20.00  1  0    4    2
-## Merc 230             95 3.92 3.150 22.90  1  0    4    2
-## Merc 280            123 3.92 3.440 18.30  1  0    4    4
-## Merc 280C           123 3.92 3.440 18.90  1  0    4    4
-## Merc 450SE          180 3.07 4.070 17.40  0  0    3    3
-## Merc 450SL          180 3.07 3.730 17.60  0  0    3    3
-## Merc 450SLC         180 3.07 3.780 18.00  0  0    3    3
-## Cadillac Fleetwood  205 2.93 5.250 17.98  0  0    3    4
-## Lincoln Continental 215 3.00 5.424 17.82  0  0    3    4
-## Chrysler Imperial   230 3.23 5.345 17.42  0  0    3    4
-## Fiat 128             66 4.08 2.200 19.47  1  1    4    1
-## Honda Civic          52 4.93 1.615 18.52  1  1    4    2
-## Toyota Corolla       65 4.22 1.835 19.90  1  1    4    1
-## Toyota Corona        97 3.70 2.465 20.01  1  0    3    1
-## Dodge Challenger    150 2.76 3.520 16.87  0  0    3    2
-## AMC Javelin         150 3.15 3.435 17.30  0  0    3    2
-## Camaro Z28          245 3.73 3.840 15.41  0  0    3    4
-## Pontiac Firebird    175 3.08 3.845 17.05  0  0    3    2
-## Fiat X1-9            66 4.08 1.935 18.90  1  1    4    1
-## Porsche 914-2        91 4.43 2.140 16.70  0  1    5    2
-## Lotus Europa        113 3.77 1.513 16.90  1  1    5    2
-## Ford Pantera L      264 4.22 3.170 14.50  0  1    5    4
-## Ferrari Dino        175 3.62 2.770 15.50  0  1    5    6
-## Maserati Bora       335 3.54 3.570 14.60  0  1    5    8
-## Volvo 142E          109 4.11 2.780 18.60  1  1    4    2</code></pre>
-<p>You can even do something like this:</p>
-<pre class="r"><code>select(mtcars, contains(&quot;p&quot;))</code></pre>
-<pre><code>##                      mpg  disp  hp
-## Mazda RX4           21.0 160.0 110
-## Mazda RX4 Wag       21.0 160.0 110
-## Datsun 710          22.8 108.0  93
-## Hornet 4 Drive      21.4 258.0 110
-## Hornet Sportabout   18.7 360.0 175
-## Valiant             18.1 225.0 105
-## Duster 360          14.3 360.0 245
-## Merc 240D           24.4 146.7  62
-## Merc 230            22.8 140.8  95
-## Merc 280            19.2 167.6 123
-## Merc 280C           17.8 167.6 123
-## Merc 450SE          16.4 275.8 180
-## Merc 450SL          17.3 275.8 180
-## Merc 450SLC         15.2 275.8 180
-## Cadillac Fleetwood  10.4 472.0 205
-## Lincoln Continental 10.4 460.0 215
-## Chrysler Imperial   14.7 440.0 230
-## Fiat 128            32.4  78.7  66
-## Honda Civic         30.4  75.7  52
-## Toyota Corolla      33.9  71.1  65
-## Toyota Corona       21.5 120.1  97
-## Dodge Challenger    15.5 318.0 150
-## AMC Javelin         15.2 304.0 150
-## Camaro Z28          13.3 350.0 245
-## Pontiac Firebird    19.2 400.0 175
-## Fiat X1-9           27.3  79.0  66
-## Porsche 914-2       26.0 120.3  91
-## Lotus Europa        30.4  95.1 113
-## Ford Pantera L      15.8 351.0 264
-## Ferrari Dino        19.7 145.0 175
-## Maserati Bora       15.0 301.0 335
-## Volvo 142E          21.4 121.0 109</code></pre>
-<p>You can still use column numbers in the <code>select</code> function:</p>
-<pre class="r"><code>select(mtcars, 1:3)</code></pre>
-<pre><code>##                      mpg cyl  disp
-## Mazda RX4           21.0   6 160.0
-## Mazda RX4 Wag       21.0   6 160.0
-## Datsun 710          22.8   4 108.0
-## Hornet 4 Drive      21.4   6 258.0
-## Hornet Sportabout   18.7   8 360.0
-## Valiant             18.1   6 225.0
-## Duster 360          14.3   8 360.0
-## Merc 240D           24.4   4 146.7
-## Merc 230            22.8   4 140.8
-## Merc 280            19.2   6 167.6
-## Merc 280C           17.8   6 167.6
-## Merc 450SE          16.4   8 275.8
-## Merc 450SL          17.3   8 275.8
-## Merc 450SLC         15.2   8 275.8
-## Cadillac Fleetwood  10.4   8 472.0
-## Lincoln Continental 10.4   8 460.0
-## Chrysler Imperial   14.7   8 440.0
-## Fiat 128            32.4   4  78.7
-## Honda Civic         30.4   4  75.7
-## Toyota Corolla      33.9   4  71.1
-## Toyota Corona       21.5   4 120.1
-## Dodge Challenger    15.5   8 318.0
-## AMC Javelin         15.2   8 304.0
-## Camaro Z28          13.3   8 350.0
-## Pontiac Firebird    19.2   8 400.0
-## Fiat X1-9           27.3   4  79.0
-## Porsche 914-2       26.0   4 120.3
-## Lotus Europa        30.4   4  95.1
-## Ford Pantera L      15.8   8 351.0
-## Ferrari Dino        19.7   6 145.0
-## Maserati Bora       15.0   8 301.0
-## Volvo 142E          21.4   4 121.0</code></pre>
-<p>The next function we’re going to learn about is the <code>filter</code> function. This function subsets the data by certain conditions. To use the <code>filter</code> function to select cars with 4 cylinders, we would do:</p>
-<pre class="r"><code>filter(mtcars, cyl == 4)</code></pre>
-<pre><code>##     mpg cyl  disp  hp drat    wt  qsec vs am gear carb
-## 1  22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
-## 2  24.4   4 146.7  62 3.69 3.190 20.00  1  0    4    2
-## 3  22.8   4 140.8  95 3.92 3.150 22.90  1  0    4    2
-## 4  32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1
-## 5  30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
-## 6  33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1
-## 7  21.5   4 120.1  97 3.70 2.465 20.01  1  0    3    1
-## 8  27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1
-## 9  26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2
-## 10 30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2
-## 11 21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2</code></pre>
-<p>We can combine conditions just like before:</p>
-<pre class="r"><code>filter(mtcars, (cyl == 4 | cyl == 8) &amp; mpg &lt; 25)</code></pre>
-<pre><code>##     mpg cyl  disp  hp drat    wt  qsec vs am gear carb
-## 1  22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
-## 2  18.7   8 360.0 175 3.15 3.440 17.02  0  0    3    2
-## 3  14.3   8 360.0 245 3.21 3.570 15.84  0  0    3    4
-## 4  24.4   4 146.7  62 3.69 3.190 20.00  1  0    4    2
-## 5  22.8   4 140.8  95 3.92 3.150 22.90  1  0    4    2
-## 6  16.4   8 275.8 180 3.07 4.070 17.40  0  0    3    3
-## 7  17.3   8 275.8 180 3.07 3.730 17.60  0  0    3    3
-## 8  15.2   8 275.8 180 3.07 3.780 18.00  0  0    3    3
-## 9  10.4   8 472.0 205 2.93 5.250 17.98  0  0    3    4
-## 10 10.4   8 460.0 215 3.00 5.424 17.82  0  0    3    4
-## 11 14.7   8 440.0 230 3.23 5.345 17.42  0  0    3    4
-## 12 21.5   4 120.1  97 3.70 2.465 20.01  1  0    3    1
-## 13 15.5   8 318.0 150 2.76 3.520 16.87  0  0    3    2
-## 14 15.2   8 304.0 150 3.15 3.435 17.30  0  0    3    2
-## 15 13.3   8 350.0 245 3.73 3.840 15.41  0  0    3    4
-## 16 19.2   8 400.0 175 3.08 3.845 17.05  0  0    3    2
-## 17 15.8   8 351.0 264 4.22 3.170 14.50  0  1    5    4
-## 18 15.0   8 301.0 335 3.54 3.570 14.60  0  1    5    8
-## 19 21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2</code></pre>
-<p>We can also combine the functions. For example, to see the miles per gallon, displacement force, and number of cylinders for all the cars with four cylinders, we can do:</p>
-<pre class="r"><code>filter(select(mtcars, &#39;mpg&#39;, &#39;cyl&#39;, &#39;disp&#39;), cyl == 4)</code></pre>
-<pre><code>##     mpg cyl  disp
-## 1  22.8   4 108.0
-## 2  24.4   4 146.7
-## 3  22.8   4 140.8
-## 4  32.4   4  78.7
-## 5  30.4   4  75.7
-## 6  33.9   4  71.1
-## 7  21.5   4 120.1
-## 8  27.3   4  79.0
-## 9  26.0   4 120.3
-## 10 30.4   4  95.1
-## 11 21.4   4 121.0</code></pre>
-<p>Note that <code>filter</code> discards rownames for <code>data.frames</code>. This is because the row names are not themselves a column. We’ll work later with <code>tibbles</code>, which are functionally similar to <code>data.frames</code>, but have a few enhancements to make working with them easier. For now, in cases where the rownames are important, you can use the <code>subset</code> function in place of filter:</p>
-<pre class="r"><code>subset(select(mtcars, &#39;mpg&#39;, &#39;cyl&#39;, &#39;disp&#39;), cyl == 4)</code></pre>
-<pre><code>##                 mpg cyl  disp
-## Datsun 710     22.8   4 108.0
-## Merc 240D      24.4   4 146.7
-## Merc 230       22.8   4 140.8
-## Fiat 128       32.4   4  78.7
-## Honda Civic    30.4   4  75.7
-## Toyota Corolla 33.9   4  71.1
-## Toyota Corona  21.5   4 120.1
-## Fiat X1-9      27.3   4  79.0
-## Porsche 914-2  26.0   4 120.3
-## Lotus Europa   30.4   4  95.1
-## Volvo 142E     21.4   4 121.0</code></pre>
-<p><code>filter</code> and <code>subset</code> are mostly the same and we’ll interchange them as needed in this tutorial. If you’d like to read more about the differences between the two, you can check out this <a href="https://stackoverflow.com/a/39882777/6024276">Stack Overflow post</a>.</p>
-<p>Note that the code above got complicated very quickly. You can imagine that as you do more and more functions on the same line, it gets easier to misplace a parentheses or a quote and it becomes harder to read. To remedy this, you could use intermediate steps, where you save the result of each function call into a new object:</p>
-<pre class="r"><code>mtcars.mpg_cyl_disp &lt;- select(mtcars, &#39;mpg&#39;, &#39;cyl&#39;, &#39;disp&#39;)
-mtcars.mpg_cyl_disp.four_cylinders &lt;- subset(mtcars.mpg_cyl_disp, cyl == 4)</code></pre>
-<p>However, this quickly clutters up your workspace with objects and functions that you don’t necessarily need.</p>
-<p>The solution to this is to start using <code>%&gt;%</code>, the pipe operator. This operator takes the object on the left and passes it as the input to the function call on the right. Liberal use of <code>%&gt;%</code> and proper formatting will make your code much easier to read. For example, the above code can be rewritten with the pipe as:</p>
-<pre class="r"><code>mtcars %&gt;% 
-  select(&#39;mpg&#39;, &#39;cyl&#39;) %&gt;% 
-  subset(cyl == 4)</code></pre>
-<pre><code>##                 mpg cyl
-## Datsun 710     22.8   4
-## Merc 240D      24.4   4
-## Merc 230       22.8   4
-## Fiat 128       32.4   4
-## Honda Civic    30.4   4
-## Toyota Corolla 33.9   4
-## Toyota Corona  21.5   4
-## Fiat X1-9      27.3   4
-## Porsche 914-2  26.0   4
-## Lotus Europa   30.4   4
-## Volvo 142E     21.4   4</code></pre>
-<p>We can immediately see that this is far more readable and easier to edit. For example, we can quickly add an additional <code>subset</code> call to get only those cars with higher than 25 miles-per-gallon:</p>
-<pre class="r"><code>mtcars %&gt;% 
-  select(&#39;mpg&#39;, &#39;cyl&#39;) %&gt;% 
-  subset(cyl == 4) %&gt;% 
-  subset(mpg &gt; 25)</code></pre>
-<pre><code>##                 mpg cyl
-## Fiat 128       32.4   4
-## Honda Civic    30.4   4
-## Toyota Corolla 33.9   4
-## Fiat X1-9      27.3   4
-## Porsche 914-2  26.0   4
-## Lotus Europa   30.4   4</code></pre>
-<p>It’s a bit of a pain to type <code>%&gt;%</code> by hand over and over, so get comfortable with the shortcut command:</p>
-<ul>
-<li>For windows users: <code>control</code> + <code>Shift</code> + <code>m</code></li>
-<li>For Mac users: <code>Cmd</code> + <code>Shift</code> + <code>m</code></li>
-</ul>
-<p>You can find a full list of shortcuts under <code>Tools</code> &gt; <code>Keyboard Shortcuts Help</code> or <a href="https://support.rstudio.com/hc/en-us/articles/200711853-Keyboard-Shortcuts">here</a>.</p>
-<p>You can still use everything you learned earlier</p>
-<pre class="r"><code>mtcars[c(&quot;Toyota Corolla&quot;, &quot;Honda Civic&quot;, &quot;Datsun 710&quot;), ] %&gt;% 
-  select(&quot;mpg&quot;, &quot;cyl&quot;)</code></pre>
-<pre><code>##                 mpg cyl
-## Toyota Corolla 33.9   4
-## Honda Civic    30.4   4
-## Datsun 710     22.8   4</code></pre>
-<div id="exercise-1.5" class="section level3">
-<h3>Exercise 1.5</h3>
-<p>For this exercise, we’re going to use the data in the <code>nycflights13</code> package. Let’s take a look at the data:</p>
-<pre class="r"><code>library(nycflights13)
-head(flights)</code></pre>
-<pre><code>## # A tibble: 6 x 19
-##    year month   day dep_time sched_dep_time dep_delay arr_time
-##   &lt;int&gt; &lt;int&gt; &lt;int&gt;    &lt;int&gt;          &lt;int&gt;     &lt;dbl&gt;    &lt;int&gt;
-## 1  2013     1     1      517            515         2      830
-## 2  2013     1     1      533            529         4      850
-## 3  2013     1     1      542            540         2      923
-## 4  2013     1     1      544            545        -1     1004
-## 5  2013     1     1      554            600        -6      812
-## 6  2013     1     1      554            558        -4      740
-## # … with 12 more variables: sched_arr_time &lt;int&gt;, arr_delay &lt;dbl&gt;,
-## #   carrier &lt;chr&gt;, flight &lt;int&gt;, tailnum &lt;chr&gt;, origin &lt;chr&gt;, dest &lt;chr&gt;,
-## #   air_time &lt;dbl&gt;, distance &lt;dbl&gt;, hour &lt;dbl&gt;, minute &lt;dbl&gt;,
-## #   time_hour &lt;dttm&gt;</code></pre>
-<p>Take a few moments to read through the documentation with <code>?flights</code> and do the following tasks:</p>
-<ul>
-<li>How many flights were there on January 1, 2013?</li>
-<li>How many flights were operated by United or Delta?</li>
-<li>How many flights arrived more than two hours late?</li>
-<li>How many flights from JFK departed more than two hours late?</li>
-<li>Read about the <code>arrange</code> function. Use it to find the flights that arrived latest.</li>
-</ul>
-</div>
-</div>
-<div id="adding-new-variables-summarizing-data" class="section level2">
-<h2>Adding new variables, summarizing data:</h2>
-<p>We’re usually interested in summarizing a data set. For example, we might be interested in the means of each of the variables in <code>mtcars</code>. One way to do this is to use the mean function on each of the columns individually:</p>
-<pre class="r"><code>mean(mtcars$mpg)</code></pre>
-<pre><code>## [1] 20.09062</code></pre>
-<pre class="r"><code># mean(mtcars$cyl)
-# mean(mtcars$disp)
-# etc...</code></pre>
-<p>Alternatively, we can just use <code>colMeans</code> on the entire data frame at once:</p>
-<pre class="r"><code>colMeans(mtcars)</code></pre>
-<pre><code>##        mpg        cyl       disp         hp       drat         wt 
-##  20.090625   6.187500 230.721875 146.687500   3.596563   3.217250 
-##       qsec         vs         am       gear       carb 
-##  17.848750   0.437500   0.406250   3.687500   2.812500</code></pre>
-<p>Another useful function is <code>summary</code>:</p>
-<pre class="r"><code>summary(mtcars)</code></pre>
-<pre><code>##       mpg             cyl             disp             hp       
-##  Min.   :10.40   Min.   :4.000   Min.   : 71.1   Min.   : 52.0  
-##  1st Qu.:15.43   1st Qu.:4.000   1st Qu.:120.8   1st Qu.: 96.5  
-##  Median :19.20   Median :6.000   Median :196.3   Median :123.0  
-##  Mean   :20.09   Mean   :6.188   Mean   :230.7   Mean   :146.7  
-##  3rd Qu.:22.80   3rd Qu.:8.000   3rd Qu.:326.0   3rd Qu.:180.0  
-##  Max.   :33.90   Max.   :8.000   Max.   :472.0   Max.   :335.0  
-##       drat             wt             qsec             vs        
-##  Min.   :2.760   Min.   :1.513   Min.   :14.50   Min.   :0.0000  
-##  1st Qu.:3.080   1st Qu.:2.581   1st Qu.:16.89   1st Qu.:0.0000  
-##  Median :3.695   Median :3.325   Median :17.71   Median :0.0000  
-##  Mean   :3.597   Mean   :3.217   Mean   :17.85   Mean   :0.4375  
-##  3rd Qu.:3.920   3rd Qu.:3.610   3rd Qu.:18.90   3rd Qu.:1.0000  
-##  Max.   :4.930   Max.   :5.424   Max.   :22.90   Max.   :1.0000  
-##        am              gear            carb      
-##  Min.   :0.0000   Min.   :3.000   Min.   :1.000  
-##  1st Qu.:0.0000   1st Qu.:3.000   1st Qu.:2.000  
-##  Median :0.0000   Median :4.000   Median :2.000  
-##  Mean   :0.4062   Mean   :3.688   Mean   :2.812  
-##  3rd Qu.:1.0000   3rd Qu.:4.000   3rd Qu.:4.000  
-##  Max.   :1.0000   Max.   :5.000   Max.   :8.000</code></pre>
-<p>From here, we can then look at which cars have higher than average mpg:</p>
-<pre class="r"><code>mtcars %&gt;% 
-  subset(mpg &gt; mean(mtcars$mpg)) </code></pre>
-<pre><code>##                 mpg cyl  disp  hp drat    wt  qsec vs am gear carb
-## Mazda RX4      21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4
-## Mazda RX4 Wag  21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4
-## Datsun 710     22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1
-## Hornet 4 Drive 21.4   6 258.0 110 3.08 3.215 19.44  1  0    3    1
-## Merc 240D      24.4   4 146.7  62 3.69 3.190 20.00  1  0    4    2
-## Merc 230       22.8   4 140.8  95 3.92 3.150 22.90  1  0    4    2
-## Fiat 128       32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1
-## Honda Civic    30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
-## Toyota Corolla 33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1
-## Toyota Corona  21.5   4 120.1  97 3.70 2.465 20.01  1  0    3    1
-## Fiat X1-9      27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1
-## Porsche 914-2  26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2
-## Lotus Europa   30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2
-## Volvo 142E     21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2</code></pre>
-<p>And we can sort them by <code>mpg</code>:</p>
-<pre class="r"><code>mtcars %&gt;% 
-  subset(mpg &gt; mean(mtcars$mpg)) %&gt;% 
-  arrange(mpg) %&gt;% 
-  head()</code></pre>
-<pre><code>##    mpg cyl  disp  hp drat    wt  qsec vs am gear carb
-## 1 21.0   6 160.0 110 3.90 2.620 16.46  0  1    4    4
-## 2 21.0   6 160.0 110 3.90 2.875 17.02  0  1    4    4
-## 3 21.4   6 258.0 110 3.08 3.215 19.44  1  0    3    1
-## 4 21.4   4 121.0 109 4.11 2.780 18.60  1  1    4    2
-## 5 21.5   4 120.1  97 3.70 2.465 20.01  1  0    3    1
-## 6 22.8   4 108.0  93 3.85 2.320 18.61  1  1    4    1</code></pre>
-<p>Again, because we’re working with a <code>data.frame</code>, the dplyr functions drop the the row names. To preserve the row names, we can first reorder the <code>data.frame</code> using Base R, then subset it:</p>
-<pre class="r"><code>mtcars[rev(order(mtcars$mpg)), ] %&gt;% 
-  subset(mpg &gt; mean(mtcars$mpg)) %&gt;% 
-  head()</code></pre>
-<pre><code>##                 mpg cyl  disp  hp drat    wt  qsec vs am gear carb
-## Toyota Corolla 33.9   4  71.1  65 4.22 1.835 19.90  1  1    4    1
-## Fiat 128       32.4   4  78.7  66 4.08 2.200 19.47  1  1    4    1
-## Lotus Europa   30.4   4  95.1 113 3.77 1.513 16.90  1  1    5    2
-## Honda Civic    30.4   4  75.7  52 4.93 1.615 18.52  1  1    4    2
-## Fiat X1-9      27.3   4  79.0  66 4.08 1.935 18.90  1  1    4    1
-## Porsche 914-2  26.0   4 120.3  91 4.43 2.140 16.70  0  1    5    2</code></pre>
-<p>Let’s suppose that we wanted to get the average <code>mpg</code> of cars by the number of cylinders it has. One way we can do this is to filter by the number of cylinders, select the <code>mpg</code> column, and then take the mean:</p>
-<pre class="r"><code>mtcars %&gt;% 
-  filter(cyl == 4) %&gt;% 
-  select(mpg) %&gt;% 
-  summarise(mean_mpg = mean(mpg))</code></pre>
-<pre><code>##   mean_mpg
-## 1 26.66364</code></pre>
-<p>Note <code>summarise</code>, the new function that we used. <code>summarise</code> calculates whatever formula you provide on the data that is passed to it. We’ll see shortly how can we use this to do some more interesting things.</p>
-<p>That’s great that we got the mean mpg for the cars with four cylinders, but we still want to know the mean mpg of the other cars. We could repeat this for each of the number of cylinders to get what we need. However, this is not scalable and relies on knowing all the different levels of the variable you’re looking at. This is not feasible for larger datasets. To remedy this, we can use the <code>group_by</code> and <code>summarise</code> commands from <code>tidyverse</code>. You pass the variable you would like group the original data by to the <code>group_by</code> function, and from there, we can use the summarise function to get some summary statistics by passing different formulas to the function call.</p>
-<p>For instance, to get the mean mpg by cylinder count, you can do:</p>
-<pre class="r"><code>mtcars %&gt;% 
-  group_by(cyl) %&gt;% 
-  summarise(mean = mean(mpg))</code></pre>
-<pre><code>## # A tibble: 3 x 2
-##     cyl  mean
-##   &lt;dbl&gt; &lt;dbl&gt;
-## 1     4  26.7
-## 2     6  19.7
-## 3     8  15.1</code></pre>
-<p>Here, we separated the data into groups based on the number of cylinders in the car, then performed the same calculation as above.</p>
-<p>We can also add a count column:</p>
-<pre class="r"><code>mtcars %&gt;% 
-  group_by(cyl) %&gt;% 
-  summarise(mean = mean(mpg),
-            count = n())</code></pre>
-<pre><code>## # A tibble: 3 x 3
-##     cyl  mean count
-##   &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt;
-## 1     4  26.7    11
-## 2     6  19.7     7
-## 3     8  15.1    14</code></pre>
-<p>Note that if we were just interested in the number of observations per group, we can simply use <code>count</code>:</p>
-<pre class="r"><code>mtcars %&gt;% 
-  group_by(cyl) %&gt;% 
-  count()</code></pre>
-<pre><code>## # A tibble: 3 x 2
-## # Groups:   cyl [3]
-##     cyl     n
-##   &lt;dbl&gt; &lt;int&gt;
-## 1     4    11
-## 2     6     7
-## 3     8    14</code></pre>
-<div id="exercise-1.6" class="section level3">
-<h3>Exercise 1.6</h3>
-<p>For the <code>mtcars</code> dataset:</p>
-<ul>
-<li>What is the average horsepower, weight, and displacement by cylinder count?</li>
-<li>How many cars are there with automatic transmission?</li>
-<li>What is the count of cars by gear count?</li>
-<li>What is the breakdown of car count by transmission type <strong>and</strong> gear count? Hint: you can group by more than one variable at a time. Notice anything interesting?</li>
-</ul>
-<p>For the <code>flights</code> dataset:</p>
-<ul>
-<li>Which carrier had the most flights that departed later than two hours?</li>
-<li>which carrier had the lowest average arrival delay?</li>
-<li>which destination airport had the most arrivals later than 30 minutes?</li>
-<li>Use <code>n_distinct</code> to find out how many distinct carriers and destinations there are.</li>
-<li>Which route (origin-destination pair) had the most flights?</li>
-<li>Which day had the most flights?</li>
-<li>Which day had the arrival delays greater than 30 minutes?</li>
-</ul>
-</div>
-</div>
-<div id="adding-new-variables-with-mutate" class="section level2">
-<h2>Adding new variables with mutate</h2>
-<p>The <code>mutate</code> function lets us add new variables to a data object by specifying a formula. For instance, to add a new column to <code>mtcars</code> showing the weight of the car in pounds (instead of thousands of pounds), we can do:</p>
-<pre class="r"><code>mtcars %&gt;% 
-  mutate(weight_in_pounds = 1000 * wt) %&gt;% 
-  head()</code></pre>
-<pre><code>##    mpg cyl disp  hp drat    wt  qsec vs am gear carb weight_in_pounds
-## 1 21.0   6  160 110 3.90 2.620 16.46  0  1    4    4             2620
-## 2 21.0   6  160 110 3.90 2.875 17.02  0  1    4    4             2875
-## 3 22.8   4  108  93 3.85 2.320 18.61  1  1    4    1             2320
-## 4 21.4   6  258 110 3.08 3.215 19.44  1  0    3    1             3215
-## 5 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2             3440
-## 6 18.1   6  225 105 2.76 3.460 20.22  1  0    3    1             3460</code></pre>
-<p>We can add multiple variables at once. For example:</p>
-<pre class="r"><code>mtcars %&gt;% 
-  mutate(weight_in_pounds = 1000 * wt,
-         hp_per_cylinder = hp / cyl) %&gt;% 
-  head()</code></pre>
-<pre><code>##    mpg cyl disp  hp drat    wt  qsec vs am gear carb weight_in_pounds
-## 1 21.0   6  160 110 3.90 2.620 16.46  0  1    4    4             2620
-## 2 21.0   6  160 110 3.90 2.875 17.02  0  1    4    4             2875
-## 3 22.8   4  108  93 3.85 2.320 18.61  1  1    4    1             2320
-## 4 21.4   6  258 110 3.08 3.215 19.44  1  0    3    1             3215
-## 5 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2             3440
-## 6 18.1   6  225 105 2.76 3.460 20.22  1  0    3    1             3460
-##   hp_per_cylinder
-## 1        18.33333
-## 2        18.33333
-## 3        23.25000
-## 4        18.33333
-## 5        21.87500
-## 6        17.50000</code></pre>
-<p>And from there, we can do all the other things that we have learned so far:</p>
-<pre class="r"><code>mtcars %&gt;% 
-  mutate(weight_in_pounds = 1000 * wt,
-         hp_per_cylinder = hp / cyl) %&gt;% 
-  select(hp, cyl, hp_per_cylinder) %&gt;% 
-  arrange(desc(hp_per_cylinder))</code></pre>
-<pre><code>##     hp cyl hp_per_cylinder
-## 1  335   8        41.87500
-## 2  264   8        33.00000
-## 3  245   8        30.62500
-## 4  245   8        30.62500
-## 5  175   6        29.16667
-## 6  230   8        28.75000
-## 7  113   4        28.25000
-## 8  109   4        27.25000
-## 9  215   8        26.87500
-## 10 205   8        25.62500
-## 11  97   4        24.25000
-## 12  95   4        23.75000
-## 13  93   4        23.25000
-## 14  91   4        22.75000
-## 15 180   8        22.50000
-## 16 180   8        22.50000
-## 17 180   8        22.50000
-## 18 175   8        21.87500
-## 19 175   8        21.87500
-## 20 123   6        20.50000
-## 21 123   6        20.50000
-## 22 150   8        18.75000
-## 23 150   8        18.75000
-## 24 110   6        18.33333
-## 25 110   6        18.33333
-## 26 110   6        18.33333
-## 27 105   6        17.50000
-## 28  66   4        16.50000
-## 29  66   4        16.50000
-## 30  65   4        16.25000
-## 31  62   4        15.50000
-## 32  52   4        13.00000</code></pre>
-<div id="exercise-1.7" class="section level3">
-<h3>Exercise 1.7</h3>
-<p>For the <code>mtcars</code>:</p>
-<ul>
-<li>What is the average <code>hp_per_cylinder</code> by cylinder count?</li>
-</ul>
-<p>For the <code>flights</code> dataset:</p>
-<ul>
-<li>Create a new variable <code>gain</code>, defined as the the difference between the departure delay and arrival delay of a flight. What does this variable represent? What is the average gain for all flights in 2013? By airline?</li>
-<li>Which routes had the worst (ie, largest) average gain?</li>
-</ul>
-<p>Next section: <a href="https://pommevilla.github.io/p3.bootcamp.r.2019/lesson_2.html">ggplot2 basics</a></p>
+<div id="determine-which-clusters-to-include" class="section level2">
+<h2>Determine which clusters to include</h2>
 </div>
 </div>
 
