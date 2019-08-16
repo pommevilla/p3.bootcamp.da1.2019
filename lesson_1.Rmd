@@ -7,20 +7,18 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 ```
 
-Suppose we have a gene of interest and would like to design primers for it. In particular, we want to target the those sequences that are abundant in the environments that we're interested in.
+I'm currently developing a primer design pipeline for the [GERMS lab](http://www.germslab.org/). The pipeline takes as input a `fasta` file containing the genes of interest and a directory of metagenomes. The pipeline then clusters the genes, identifies which genes are abundant in the submitted metagenomes, and designs primers for those sequences. See below for an overview of the process:
 
-The steps that this process would take are:
+![MetaFunPrimer flowchart](data/metafunprimer.png)
 
-1. Identify gene of interest
-2. Choose an optimum similarity threshold to cluster genes into
-3. Quantify environmental abundance and presence by BLASTing against metagenomes
-4. Determine which clusters to include 
-5. Extract the nucleotide sequences
-6. Design primers
-7. Perform *in silico* qPCR to determine effectiveness and specifity.
+Today, we will working on the *Filter* step. This step is comprised of the following:
 
+1. Choose an optimum similarity threshold for gene clustering
+2. Quantify environmental abundance and presence by BLAST the representative sequences against the metagenomes
+3. Determine which clusters to include 
+4. Extract the nucleotide sequences
 
-This entire process can be done entirely on the command line. However, due to time constraints, we will only be reproducing part of this pipeline today. In particular, we will do steps 2, 4, and 5. Along the way, we will review concepts and stuff.
+Querying the sequences against all the metagenomes takes more time than we have today, so we will only be reproducing steps 1, 3, and 4 today.
 
 ## Choosing an optimum similarity threshold
 
@@ -31,6 +29,7 @@ We have clustered it already.
 ```{bash}
 ls
 ```
+
 
 ### A review of `grep`
 
