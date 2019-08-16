@@ -7,33 +7,20 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 ```
 
-
 ## About this workshop
 
-The workshop is broken up into 4 parts:
+The previous workshops in this bootcamp were focused on introducing some basic functionality of the languages to people who had 0 previous exposure. This workshop builds upon those skills by working through some real tasks and problems that you may encounter in your work.
 
-* [R Basics](https://pommevilla.github.io/p3.bootcamp.r.2019/lesson_1.html)
-* [ggplot2 basics](https://pommevilla.github.io/p3.bootcamp.r.2019/lesson_2.html)
-* [Next steps](https://pommevilla.github.io/p3.bootcamp.r.2019/next_steps.html)
+The two main topics of this workshop are:
 
-You'll need to install the following packages to do this workshop: `ggplot2`, `tidyverse`, `Rmarkdown`, and `reshape2`. 
+* File manipulation on the command line 
+* Visualization and analysis of decreasing marginal utility curves
 
+Along the way, we will review and expand upon the knowledge you gained from the previous three workshops. You will need the following packages to do this workshop:
 
-
-## Why R?
-
-There are several programming languages out there, and they're all ultimately capable of doing whatever your goal is. That being said, here are some reasons why you might choose to learn R:
-
-* R seems to be the language of choice for statistical modeling and analysis.
-* Creating pretty graphs is relatively straightforward with `ggplot2`
-* RStudio is an excellent IDE and is constantly being updated and bug-fixed.
-* The biggest draw for me is the community support. R actively fosters a community of supportive people that you can turn to for help. 
-* Another benefit of this large community is that there are tons of packages for you to use. If you need to perform a specific task, there is likely an R package that can do it for you.
-
-Let's get started!
-
-Next section: [R basics](https://pommevilla.github.io/p3.bootcamp.r.2019/lesson_1.html)
-
+* rmarkdown
+* ggplot2
+* tidyverse
 
 [p3-landing]: https://www.predictivephenomicsinplants.iastate.edu/
 [intro-to-r]: https://github.com/pommevilla/p3.bootcamp.r.2019

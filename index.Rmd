@@ -17,16 +17,6 @@ Materials for the programming bootcamp hosted by the [Predictive Plant Phenomics
 
 The Predictive Plant Phenomics NRT is an interdisciplinary program combining plant biology, engineering, and data science.  However, since most of the P3 students have backgrounds in the biological sciences, they likely haven't had substantial programming training.  These workshops are the annual Programming Bootcamps are an introduction for the incoming class of P3 students (and anyone else that would like to attend) to programming basics.
 
-## About this workshop
-
-The previous workshops in this bootcamp were focused on introducing some basic functionality of the languages to people who had 0 previous exposure. This workshop builds upon those skills by working through some real tasks and problems that you may encounter in your work.
-
-The sections of this workshop are:
-
-* File manipulation on the command line 
-* Visualizing data
-* Machine learning
-
 ## About The P3 NRT
 
 From the [P3 website][p3-landing]:
