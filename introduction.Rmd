@@ -16,11 +16,19 @@ The two main topics of this workshop are:
 * File manipulation on the command line 
 * Visualization and analysis of decreasing marginal utility curves
 
-Along the way, we will review and expand upon the knowledge you gained from the previous three workshops. You will need the following packages to do this workshop:
+Along the way, we will review and expand upon the knowledge you gained from the previous three workshops. 
+
+To do this workshop, you will need the following packages to do this workshop:
 
 * rmarkdown
 * ggplot2
 * tidyverse
+
+Finally, clone this repository by entering the following into your command line:
+
+```{bash, eval = FALSE}
+git clone https://github.com/pommevilla/p3.bootcamp.da1.2019.git
+```
 
 [p3-landing]: https://www.predictivephenomicsinplants.iastate.edu/
 [intro-to-r]: https://github.com/pommevilla/p3.bootcamp.r.2019
