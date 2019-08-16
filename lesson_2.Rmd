@@ -92,11 +92,12 @@ tft_stats %>%
 
 ```
 
-We're going to use the `mutate` function. `mutate` lets us add columns to a data frame based on other columns. For instance, we can add a column to `mtcars` to store the ratio between `hp` and `wt`:
+We're going to use the `mutate` function to add some more information to this plot. `mutate` lets us add columns to a data frame based on other columns. For instance, we can add a column to `mtcars` to store the ratio between `hp` and `wt`:
 
 ```{r}
 mtcars %>% 
-  mutate(hp_to_wt = hp / wt)
+  mutate(hp_to_wt = hp / wt) %>% 
+  head()
 ```
 
 And we can go ahead and plot this new variable right away:
