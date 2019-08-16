@@ -7,6 +7,11 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 ```
 
+According to the first-order difference criterion, the optimal clustering similarity was 98%. However, for various reasons (mostly due to physical limitations), we ended up choosing a 95% similarity threshold. 
+
+After determining this, we then used the representative sequences found in `0.95.fa` and queried them against our metagenomes. Thus, for each metagenome, we had an output file containing all the relevant hits. We then used a Python script to summarize the abundance and presence of each these representative sequences across our metagenomes. This information can be found in `data/abundance_presence.tsv`
+
 ## Determine which clusters to include
 
-According to the first-order difference criterion, the optimal clustering similarity was 
+
+
