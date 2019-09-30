@@ -1,11 +1,19 @@
 # P3 Programming Bootcamp 2019: Data Applications 1
 
-Materials for the programming bootcamp hosted by the [Predictive Plant Phenomics (P3) NRT program][p3-landing] on August 16, 2019. This workshop is a demonstration of 
+Materials for the *Data Applications 1* workshop of the Programming Bootcamp hosted by the [Predictive Plant Phenomics (P3) NRT program][p3-landing] on August 13-19, 2019. The other workshops in this bootcamp are:
 
-* [August 13: *Introduction to R*][intro-to-r] taught by [Paul Villanueva][paul-github]
+* [August 13: *Introduction to R*][intro-to-r] (this page) taught by [Paul Villanueva][paul-github]
 * [August 14: *Introduction to Python*][intro-to-python] taught by [Paul Villanueva][paul-github]
 * [August 15: *Introduction to UNIX*][intro-to-unix] taught by [Shane Dooley][shane-github]
 * [August 16: *Data Applications 1*][data-1] taught by [Paul Villanueva][paul-github]
+* [August 19: *Data Applications 2*][data-2] taught by [Paul Villanueva][paul-github]
+
+## About this workshop
+
+This workshp is an example of using the command line and R to work through a problem that is a small part of a bigger whole. There are two parts to this workshop:
+
+* [Shell scripting](https://pommevilla.github.io/p3.bootcamp.da1.2019/lesson_1.html)
+* [Data visualization in R](https://pommevilla.github.io/p3.bootcamp.da1.2019/lesson_2.html)
 
 ## About these workshops
 
