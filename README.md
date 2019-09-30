@@ -33,7 +33,7 @@ The National Science Foundation Research Traineeship (NRT) is the Foundation's n
 
 ## Contact
 
-Send questions, comments, and feedback to pev at iastate dot edu.
+Send questions, comments, and feedback to pev@iastate.edu.
 
 [p3-landing]: https://www.predictivephenomicsinplants.iastate.edu/
 [intro-to-r]: https://pommevilla.github.io/p3.bootcamp.r.2019/ 
